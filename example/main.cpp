@@ -9,9 +9,10 @@ int main() try {
     runtime.default_memory_config = {
         .read_policy = pram::ReadPolicy::Concurrent, .write_policy = pram::WritePolicy::Exclusive};
 
-    auto array = runtime.allocate<int>(std::views::iota(0, 16) | std::ranges::to<std::vector<int>>());
+    constexpr size_t size = 16;
+    auto array = runtime.allocate<int>(std::views::iota(0zU, size) | std::ranges::to<std::vector<int>>());
 
-    runtime.parallel(4, [&](size_t pid) -> pram::Task {
+    runtime.parallel(size, [&](size_t pid) -> pram::Task {
         std::println("pid={}", pid);
         std::println("load={}", co_await array->load(pid));
         co_await array->store(pid, 1);
