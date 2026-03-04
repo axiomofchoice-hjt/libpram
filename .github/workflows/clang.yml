@@ -1,0 +1,44 @@
+name: clang checks
+
+on:
+  pull_request:
+
+jobs:
+  clang:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang \
+            clang-tidy \
+            clang-format \
+            llvm \
+            python3
+
+      - name: Install xmake
+        uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: latest
+
+      - name: Generate compile_commands.json
+        run: |
+          xmake project -y -k compile_commands build
+
+      - name: Run clang-format (check only)
+        run: |
+          clang-format --version
+          files=$(find src -name '*.cpp' -o -name '*.h')
+          clang-format --dry-run --Werror $files
+
+      - name: Run clang-tidy
+        run: |
+          clang-tidy --version
+          clang-tidy \
+            -p build \
+            $(find src -name '*.cpp')

@@ -1,0 +1,19 @@
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-exception-escape,
+  clang-analyzer-*,
+  performance-*,
+  readability-*,
+  -readability-identifier-length,
+  modernize-use-nullptr,
+  modernize-use-override,
+  modernize-use-using
+
+WarningsAsErrors: ''
+
+HeaderFilterRegex: 'src/.*'
+
+CheckOptions:
+  - key: readability-identifier-naming.IgnoreMainLikeFunctions
+    value: '1'
