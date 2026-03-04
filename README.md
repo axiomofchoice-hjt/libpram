@@ -1,4 +1,4 @@
-# libpram - PRAM Runtime Library
+# libpram
 
 libpram 是一个基于 C++ 实现的 PRAM（Parallel Random Access Machine）运行时库，用于并行复杂度实验与模型验证。
 
