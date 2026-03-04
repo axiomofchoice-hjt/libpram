@@ -121,7 +121,7 @@ struct Array : Memory {
             std::ranges::sort(
                 write_requests, [](const WriteRequest& a, const WriteRequest& b) { return a.address < b.address; });
             for (size_t i = 0; i < write_requests.size(); i++) {
-                if (i != 0 || write_requests[i].address != write_requests[i - 1].address) {
+                if (i == 0 || write_requests[i].address != write_requests[i - 1].address) {
                     *write_requests[i].address = write_requests[i].value;
                 } else {
                     *write_requests[i].address = combine_function(*write_requests[i].address, write_requests[i].value);
