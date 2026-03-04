@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/assert.h"
 #include "runtime_fwd.h"
 
 namespace pram {
@@ -88,7 +89,7 @@ struct Array : Memory {
             std::ranges::sort(read_requests);
             for (size_t i = 0; i + 1 < read_requests.size(); i++) {
                 if (read_requests[i] == read_requests[i + 1]) {
-                    std::println("Read conflict");
+                    assert_or_throw(false, "Read conflict: exclusive read to the same address");
                 }
             }
         }
@@ -97,7 +98,7 @@ struct Array : Memory {
                 write_requests, [](const WriteRequest& a, const WriteRequest& b) { return a.address < b.address; });
             for (size_t i = 0; i + 1 < write_requests.size(); i++) {
                 if (write_requests[i].address == write_requests[i + 1].address) {
-                    std::println("Write conflict");
+                    assert_or_throw(false, "Write conflict: exclusive write to the same address");
                 }
             }
             for (const auto& req : write_requests) {
@@ -110,7 +111,7 @@ struct Array : Memory {
             for (size_t i = 0; i + 1 < write_requests.size(); i++) {
                 if (write_requests[i].address == write_requests[i + 1].address &&
                     write_requests[i].value != write_requests[i + 1].value) {
-                    std::println("Write conflict");
+                    assert_or_throw(false, "Write conflict: common write with different values");
                 }
             }
             for (const auto& req : write_requests) {
