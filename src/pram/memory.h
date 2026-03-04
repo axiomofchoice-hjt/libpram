@@ -135,6 +135,9 @@ struct Array : Memory {
         } else if (config.write_policy == WritePolicy::Min) {
             combining(write_requests, [](const T& a, const T& b) { return std::min(a, b); });
         }
+
+        read_requests.clear();
+        write_requests.clear();
     }
 };
 }  // namespace pram
