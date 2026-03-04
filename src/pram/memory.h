@@ -15,14 +15,14 @@ template <typename T>
 struct LoadAwaitable {
     T value;
     bool await_ready() const noexcept { return false; }
-    void await_suspend([[maybe_unused]] std::coroutine_handle<> _) noexcept {}
+    bool await_suspend([[maybe_unused]] std::coroutine_handle<> _) noexcept { return true; }
     T await_resume() noexcept { return value; }
 };
 
 template <typename T>
 struct StoreAwaitable {
     bool await_ready() const noexcept { return false; }
-    void await_suspend([[maybe_unused]] std::coroutine_handle<> _) noexcept {}
+    bool await_suspend([[maybe_unused]] std::coroutine_handle<> _) noexcept { return true; }
     void await_resume() noexcept {}
 };
 
