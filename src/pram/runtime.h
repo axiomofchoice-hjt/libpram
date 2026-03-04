@@ -19,6 +19,29 @@ struct Task {
     };
 
     std::coroutine_handle<promise_type> handle;
+
+    void destroy(this auto&& self) {
+        if (self.handle) {
+            self.handle.destroy();
+            self.handle = nullptr;
+        }
+    }
+
+    explicit Task(std::coroutine_handle<promise_type> h) : handle(h) {}
+
+    Task(const Task&) = delete;
+    Task& operator=(this auto&& self, const Task&) = delete;
+    Task(Task&& other) noexcept : handle(other.handle) { other.handle = nullptr; }
+    Task& operator=(this auto&& self, Task&& other) noexcept {
+        if (&self != &other) {
+            self.destroy();
+            self.handle = other.handle;
+            other.handle = nullptr;
+        }
+        return self;
+    }
+
+    ~Task() { destroy(); }
 };
 
 struct Runtime {
