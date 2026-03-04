@@ -6,6 +6,7 @@ find . -type f \
   ! -path '*/.cache/*' \
   ! -path '*/.xmake/*' \
   ! -path '*/.github/*' \
+  ! -path '*/.clang-*' \
   -exec echo "===== FILE: {} =====" \; \
   -exec cat {} \; \
   > build/temp
