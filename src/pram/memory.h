@@ -2,7 +2,9 @@
 
 #include <coroutine>
 #include <cstddef>
+#include <functional>
 #include <print>
+#include <utility>
 #include <vector>
 
 #include "runtime_fwd.h"
@@ -28,6 +30,25 @@ struct StoreAwaitable {
     }
 };
 
+enum class ReadPolicy : uint8_t {
+    Exclusive,   // 互斥读
+    Concurrent,  // 并发读
+};
+
+enum class WritePolicy : uint8_t {
+    Exclusive,  // 互斥写
+    Common,     // 公共写
+    Arbitrary,  // 任意写
+    Priority,   // 优先写
+    Combining,  // 合并写
+};
+
+struct MemoryConfig {
+    ReadPolicy read_policy;
+    WritePolicy write_policy;
+    std::function<void()> combine_function;  // 仅当 WritePolicy::Combining 时有效
+};
+
 struct Memory {
     virtual void start_round() = 0;
     virtual void end_round() = 0;
@@ -39,10 +60,13 @@ template <typename T>
 struct Array : Memory {
     std::vector<T> data;
     Runtime* runtime;
+    MemoryConfig config;
 
-    Array(size_t length, Runtime* runtime) : data(std::vector<T>(length)), runtime(runtime) {}
+    Array(size_t length, Runtime* runtime, MemoryConfig config)
+        : data(std::vector<T>(length)), runtime(runtime), config(std::move(config)) {}
 
-    Array(std::vector<T> data, Runtime* runtime) : data(std::move(data)), runtime(runtime) {}
+    Array(std::vector<T> data, Runtime* runtime, MemoryConfig config)
+        : data(std::move(data)), runtime(runtime), config(std::move(config)) {}
 
     LoadAwaitable<T> load(size_t index) { return LoadAwaitable<T>{data[index]}; }
 

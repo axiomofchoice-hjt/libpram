@@ -6,6 +6,9 @@
 
 int main() try {
     pram::Runtime runtime{};
+    runtime.default_memory_config = {.read_policy = pram::ReadPolicy::Concurrent,
+        .write_policy = pram::WritePolicy::Exclusive,
+        .combine_function = nullptr};
 
     auto array = runtime.allocate<int>(std::views::iota(0, 16) | std::ranges::to<std::vector<int>>());
 
