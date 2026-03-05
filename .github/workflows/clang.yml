@@ -38,7 +38,4 @@ jobs:
 
       - name: Run clang-tidy
         run: |
-          clang-tidy --version
-          clang-tidy \
-            -p build \
-            $(find src -name '*.cpp')
+          run-clang-tidy -p build
