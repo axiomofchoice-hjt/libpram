@@ -40,8 +40,13 @@ struct ReadAwaitable {
 
 template <typename T>
 struct WriteAwaitable {
+    std::vector<impl::WriteRequest<T>>* write_requests;
+    T* internal_ref;
+    T value;
     bool await_ready() const noexcept { return false; }
-    void await_suspend([[maybe_unused]] std::coroutine_handle<> _) noexcept {}
+    void await_suspend([[maybe_unused]] std::coroutine_handle<> _) noexcept {
+        write_requests->push_back({internal_ref, value});
+    }
     void await_resume() noexcept {}
 };
 
@@ -126,8 +131,11 @@ struct SharedArray : Memory {
     }
 
     WriteAwaitable<T> write(size_t index, T value) {
-        write_requests.push_back({&data[index], value});
-        return WriteAwaitable<T>{};
+        WriteAwaitable<T> a;
+        a.internal_ref = &data[index];
+        a.write_requests = &write_requests;
+        a.value = value;
+        return a;
     }
 
     void commit() override {
