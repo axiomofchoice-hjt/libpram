@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "base/assert.h"
-#include "runtime_fwd.h"
 
 namespace pram {
 template <typename T>
@@ -113,17 +112,14 @@ void apply_combining_write(const std::vector<WriteRequest<T>>& write_requests, c
 template <typename T>
 struct Array : Memory {
     std::vector<T> data;
-    Machine* runtime;
     MemoryConfig config;
 
     std::vector<T*> read_requests;
     std::vector<WriteRequest<T>> write_requests;
 
-    Array(size_t length, Machine* runtime, MemoryConfig config)
-        : data(std::vector<T>(length)), runtime(runtime), config(config) {}
+    Array(size_t length, MemoryConfig config) : data(std::vector<T>(length)), config(config) {}
 
-    Array(std::vector<T> data, Machine* runtime, MemoryConfig config)
-        : data(std::move(data)), runtime(runtime), config(config) {}
+    Array(std::vector<T> data, MemoryConfig config) : data(std::move(data)), config(config) {}
 
     LoadAwaitable<T> load(size_t index) {
         read_requests.push_back(&data[index]);

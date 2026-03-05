@@ -1,8 +1,7 @@
 #include <print>
 #include <ranges>
 
-#include "base/assert.h"
-#include "pram/machine.h"
+#include "pram/pram.h"
 
 int main() try {
     pram::Machine machine{};
