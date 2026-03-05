@@ -12,7 +12,7 @@
 
 namespace pram {
 template <typename T>
-struct LoadAwaitable {
+struct ReadAwaitable {
     T value;
     bool await_ready() const noexcept { return false; }
     bool await_suspend([[maybe_unused]] std::coroutine_handle<> _) noexcept { return true; }
@@ -20,7 +20,7 @@ struct LoadAwaitable {
 };
 
 template <typename T>
-struct StoreAwaitable {
+struct WriteAwaitable {
     bool await_ready() const noexcept { return false; }
     bool await_suspend([[maybe_unused]] std::coroutine_handle<> _) noexcept { return true; }
     void await_resume() noexcept {}
@@ -120,14 +120,14 @@ struct SharedArray : Memory {
 
     SharedArray(std::vector<T> data, MemoryConfig config) : data(std::move(data)), config(config) {}
 
-    LoadAwaitable<T> load(size_t index) {
+    ReadAwaitable<T> read(size_t index) {
         read_requests.push_back(&data[index]);
-        return LoadAwaitable<T>{data[index]};
+        return ReadAwaitable<T>{data[index]};
     }
 
-    StoreAwaitable<T> store(size_t index, T value) {
+    WriteAwaitable<T> write(size_t index, T value) {
         write_requests.push_back({&data[index], value});
-        return StoreAwaitable<T>{};
+        return WriteAwaitable<T>{};
     }
 
     void start_round() override { std::println("start_round"); }

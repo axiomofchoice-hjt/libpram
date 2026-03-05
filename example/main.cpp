@@ -13,9 +13,9 @@ int main() try {
 
     machine.parallel(size, [&](size_t pid) -> pram::Task {
         std::println("pid={}", pid);
-        std::println("load={}", co_await array->load(pid));
-        co_await array->store(pid, 1);
-        std::println("load={}", co_await array->load(pid));
+        std::println("read {}", co_await array->read(pid));
+        co_await array->write(pid, 1);
+        std::println("read {}", co_await array->read(pid));
     });
 } catch (const pram::assertion_error& e) {
     std::println("Assertion error: {}", e.what());
