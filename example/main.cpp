@@ -2,17 +2,17 @@
 #include <ranges>
 
 #include "base/assert.h"
-#include "pram/runtime.h"
+#include "pram/machine.h"
 
 int main() try {
-    pram::Runtime runtime{};
-    runtime.default_memory_config = {
+    pram::Machine machine{};
+    machine.default_memory_config = {
         .read_policy = pram::ReadPolicy::Concurrent, .write_policy = pram::WritePolicy::Exclusive};
 
     constexpr size_t size = 16;
-    auto array = runtime.allocate<int>(std::views::iota(0zU, size) | std::ranges::to<std::vector<int>>());
+    auto array = machine.allocate<int>(std::views::iota(0zU, size) | std::ranges::to<std::vector<int>>());
 
-    runtime.parallel(size, [&](size_t pid) -> pram::Task {
+    machine.parallel(size, [&](size_t pid) -> pram::Task {
         std::println("pid={}", pid);
         std::println("load={}", co_await array->load(pid));
         co_await array->store(pid, 1);

@@ -44,7 +44,7 @@ struct Task {
     ~Task() { destroy(); }
 };
 
-struct Runtime {
+struct Machine {
     std::vector<Memory*> memories;
 
     MemoryConfig default_memory_config;

@@ -1,5 +1,5 @@
 #pragma once
 
 namespace pram {
-struct Runtime;
+struct Machine;
 }  // namespace pram
