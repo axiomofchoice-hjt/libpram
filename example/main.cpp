@@ -1,21 +1,55 @@
 #include <print>
+#include <random>
 #include <ranges>
 
 #include "pram/pram.h"
 
-int main() try {
-    pram::Machine machine{pram::CREW};
+void print(const pram::SharedArray<int>& array) {
+    std::print("[");
+    for (size_t i = 0; i < array.data.size(); ++i) {
+        if (i != 0) {
+            std::print(", ");
+        }
+        std::print("{}", array.data[i]);
+    }
+    std::print("]\n");
+}
 
-    constexpr size_t size = 16;
-    auto& array = machine.allocate<int>(std::views::iota(0zU, size) | std::ranges::to<std::vector<int>>());
+void parallel_sort() {
+    pram::Machine machine{pram::CRCW_Add};
+
+    constexpr size_t size = 8;
+
+    std::mt19937 gen{std::random_device{}()};
+    auto data = std::views::iota(1, static_cast<int>(size + 1)) | std::ranges::to<std::vector>();
+    std::ranges::shuffle(data, gen);
+    auto& array = machine.allocate<int>(std::move(data));
+    auto& counter = machine.allocate<size_t>(size);
+
+    print(array);
+
+    machine.parallel(size * size, [&](size_t pid) -> pram::Task {
+        size_t i = pid / size;
+        size_t j = pid % size;
+        int value_i = co_await array.read(i);
+        int value_j = co_await array.read(j);
+        if (std::pair{value_i, i} > std::pair{value_j, j}) {
+            co_await counter.write(i, 1);
+        } else {
+            co_await counter.write(i, 0);
+        }
+    });
 
     machine.parallel(size, [&](size_t pid) -> pram::Task {
-        std::println("pid={}", pid);
-        std::println("read {}", co_await array.read(pid));
-        co_await array.write(pid, 1);
-        std::println("read {}", co_await array.read(pid));
+        size_t index = co_await counter.read(pid);
+        int value = co_await array.read(pid);
+        co_await array.write(index, value);
     });
-} catch (const pram::assertion_error& e) {
+
+    print(array);
+}
+
+int main() try { parallel_sort(); } catch (const pram::assertion_error& e) {
     std::println("Assertion error: {}", e.what());
     return 1;
 } catch (const std::exception& e) {
