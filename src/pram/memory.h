@@ -109,16 +109,16 @@ void apply_combining_write(const std::vector<WriteRequest<T>>& write_requests, c
 }  // namespace impl
 
 template <typename T>
-struct Array : Memory {
+struct SharedArray : Memory {
     std::vector<T> data;
     MemoryConfig config;
 
     std::vector<T*> read_requests;
     std::vector<impl::WriteRequest<T>> write_requests;
 
-    Array(size_t length, MemoryConfig config) : data(std::vector<T>(length)), config(config) {}
+    SharedArray(size_t length, MemoryConfig config) : data(std::vector<T>(length)), config(config) {}
 
-    Array(std::vector<T> data, MemoryConfig config) : data(std::move(data)), config(config) {}
+    SharedArray(std::vector<T> data, MemoryConfig config) : data(std::move(data)), config(config) {}
 
     LoadAwaitable<T> load(size_t index) {
         read_requests.push_back(&data[index]);

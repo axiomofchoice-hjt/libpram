@@ -50,17 +50,17 @@ struct Machine {
     MemoryConfig default_memory_config;
 
     template <typename T>
-    std::unique_ptr<Array<T>> allocate(
+    std::unique_ptr<SharedArray<T>> allocate(
         this auto&& self, size_t length, std::optional<MemoryConfig> config = std::nullopt) {
-        auto array = std::make_unique<Array<T>>(length, config.value_or(self.default_memory_config));
+        auto array = std::make_unique<SharedArray<T>>(length, config.value_or(self.default_memory_config));
         self.memories.push_back(array.get());
         return array;
     }
 
     template <typename T>
-    std::unique_ptr<Array<T>> allocate(
+    std::unique_ptr<SharedArray<T>> allocate(
         this auto&& self, std::vector<T> data, std::optional<MemoryConfig> config = std::nullopt) {
-        auto array = std::make_unique<Array<T>>(std::move(data), config.value_or(self.default_memory_config));
+        auto array = std::make_unique<SharedArray<T>>(std::move(data), config.value_or(self.default_memory_config));
         self.memories.push_back(array.get());
         return array;
     }
