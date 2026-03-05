@@ -9,72 +9,73 @@
 #include <vector>
 
 #include "base/assert.h"
-#include "runtime_fwd.h"
+#include "model.h"
 
 namespace pram {
+namespace impl {
 template <typename T>
-struct LoadAwaitable {
-    T value;
-    bool await_ready() const noexcept { return false; }
-    bool await_suspend([[maybe_unused]] std::coroutine_handle<> _) noexcept { return true; }
-    T await_resume() noexcept { return value; }
-};
-
-template <typename T>
-struct StoreAwaitable {
-    bool await_ready() const noexcept { return false; }
-    bool await_suspend([[maybe_unused]] std::coroutine_handle<> _) noexcept { return true; }
-    void await_resume() noexcept {}
-};
-
-enum class ReadPolicy : uint8_t {
-    Exclusive,   // 互斥读
-    Concurrent,  // 并发读
-};
-
-enum class WritePolicy : uint8_t {
-    Exclusive,  // 互斥写
-    Common,     // 公共写
-    Arbitrary,  // 任意写
-    Add,        // 合并写 加法
-    Max,        // 合并写 取最大值
-    Min,        // 合并写 取最小值
-};
-
-struct MemoryConfig {
-    ReadPolicy read_policy;
-    WritePolicy write_policy;
-};
-
-struct Memory {
-    virtual void start_round() = 0;
-    virtual void end_round() = 0;
-
-    virtual ~Memory() = default;
+struct ReadRequest {
+    T* internal_ref;
+    T* external_ref;
 };
 
 template <typename T>
 struct WriteRequest {
-    T* address;
+    T* internal_ref;
     T value;
+};
+}  // namespace impl
+
+template <typename T>
+struct ReadAwaitable {
+    std::vector<impl::ReadRequest<T>>* read_requests;
+    T* internal_ref;
+    T value;
+    bool await_ready() const noexcept { return false; }
+    void await_suspend([[maybe_unused]] std::coroutine_handle<> _) noexcept {
+        read_requests->push_back({internal_ref, &value});
+    }
+    T await_resume() noexcept { return value; }
+};
+
+template <typename T>
+struct WriteAwaitable {
+    std::vector<impl::WriteRequest<T>>* write_requests;
+    T* internal_ref;
+    T value;
+    bool await_ready() const noexcept { return false; }
+    void await_suspend([[maybe_unused]] std::coroutine_handle<> _) noexcept {
+        write_requests->push_back({internal_ref, value});
+    }
+    void await_resume() noexcept {}
+};
+
+struct Memory {
+    virtual void commit() = 0;
+    virtual ~Memory() = default;
 };
 
 namespace impl {
-
-namespace {
 template <typename T>
-void check_exclusive_read(const std::vector<T*>& read_requests) {
+void check_exclusive_read(const std::vector<ReadRequest<T>>& read_requests) {
     for (size_t i = 0; i + 1 < read_requests.size(); i++) {
-        if (read_requests[i] == read_requests[i + 1]) {
+        if (read_requests[i].internal_ref == read_requests[i + 1].internal_ref) {
             assert_or_throw(false, "Read conflict: exclusive read to the same address");
         }
     }
 }
 
 template <typename T>
+void apply_read(const std::vector<ReadRequest<T>>& read_requests) {
+    for (const auto& req : read_requests) {
+        *req.external_ref = *req.internal_ref;
+    }
+}
+
+template <typename T>
 void check_exclusive_write(const std::vector<WriteRequest<T>>& write_requests) {
     for (size_t i = 0; i + 1 < write_requests.size(); i++) {
-        if (write_requests[i].address == write_requests[i + 1].address) {
+        if (write_requests[i].internal_ref == write_requests[i + 1].internal_ref) {
             assert_or_throw(false, "Write conflict: exclusive write to the same address");
         }
     }
@@ -83,7 +84,7 @@ void check_exclusive_write(const std::vector<WriteRequest<T>>& write_requests) {
 template <typename T>
 void check_common_write(const std::vector<WriteRequest<T>>& write_requests) {
     for (size_t i = 0; i + 1 < write_requests.size(); i++) {
-        if (write_requests[i].address == write_requests[i + 1].address &&
+        if (write_requests[i].internal_ref == write_requests[i + 1].internal_ref &&
             write_requests[i].value != write_requests[i + 1].value) {
             assert_or_throw(false, "Write conflict: common write with different values");
         }
@@ -91,75 +92,91 @@ void check_common_write(const std::vector<WriteRequest<T>>& write_requests) {
 }
 
 template <typename T>
-void apply_exclusive_common_write(const std::vector<WriteRequest<T>>& write_requests) {
+void apply_write(const std::vector<WriteRequest<T>>& write_requests) {
     for (const auto& req : write_requests) {
-        *req.address = req.value;
+        *req.internal_ref = req.value;
     }
 }
 
 template <typename T>
 void apply_combining_write(const std::vector<WriteRequest<T>>& write_requests, const auto& combine_function) {
     for (size_t i = 0; i < write_requests.size(); i++) {
-        if (i == 0 || write_requests[i].address != write_requests[i - 1].address) {
-            *write_requests[i].address = write_requests[i].value;
+        if (i == 0 || write_requests[i].internal_ref != write_requests[i - 1].internal_ref) {
+            *write_requests[i].internal_ref = write_requests[i].value;
         } else {
-            *write_requests[i].address = combine_function(*write_requests[i].address, write_requests[i].value);
+            *write_requests[i].internal_ref =
+                combine_function(*write_requests[i].internal_ref, write_requests[i].value);
         }
     }
 }
-}  // namespace
 }  // namespace impl
 
 template <typename T>
-struct Array : Memory {
+struct SharedArray : Memory {
     std::vector<T> data;
-    Runtime* runtime;
-    MemoryConfig config;
+    Model model;
 
-    std::vector<T*> read_requests;
-    std::vector<WriteRequest<T>> write_requests;
+    std::vector<impl::ReadRequest<T>> read_requests;
+    std::vector<impl::WriteRequest<T>> write_requests;
 
-    Array(size_t length, Runtime* runtime, MemoryConfig config)
-        : data(std::vector<T>(length)), runtime(runtime), config(config) {}
+    SharedArray(size_t length, Model model) : data(std::vector<T>(length)), model(model) {}
 
-    Array(std::vector<T> data, Runtime* runtime, MemoryConfig config)
-        : data(std::move(data)), runtime(runtime), config(config) {}
+    SharedArray(std::vector<T> data, Model model) : data(std::move(data)), model(model) {}
 
-    LoadAwaitable<T> load(size_t index) {
-        read_requests.push_back(&data[index]);
-        return LoadAwaitable<T>{data[index]};
+    ReadAwaitable<T> read(size_t index) {
+        ReadAwaitable<T> a;
+        a.internal_ref = &data[index];
+        a.read_requests = &read_requests;
+        return a;
     }
 
-    StoreAwaitable<T> store(size_t index, T value) {
-        write_requests.push_back({&data[index], value});
-        return StoreAwaitable<T>{};
+    WriteAwaitable<T> write(size_t index, T value) {
+        WriteAwaitable<T> a;
+        a.internal_ref = &data[index];
+        a.write_requests = &write_requests;
+        a.value = value;
+        return a;
     }
 
-    void start_round() override { std::println("start_round"); }
+    void commit() override {
+        std::println("commit");
+        std::ranges::sort(read_requests, [](const impl::ReadRequest<T>& a, const impl::ReadRequest<T>& b) {
+            return a.internal_ref < b.internal_ref;
+        });
+        std::ranges::sort(write_requests, [](const impl::WriteRequest<T>& a, const impl::WriteRequest<T>& b) {
+            return a.internal_ref < b.internal_ref;
+        });
 
-    void end_round() override {
-        std::println("end_round");
-        std::ranges::sort(read_requests);
-        std::ranges::sort(
-            write_requests, [](const WriteRequest<T>& a, const WriteRequest<T>& b) { return a.address < b.address; });
+        switch (model.read_policy) {
+            case impl::ReadPolicy::Exclusive:  // 处理互斥读
+                impl::check_exclusive_read(read_requests);
+                impl::apply_read(read_requests);
+                break;
+            case impl::ReadPolicy::Concurrent:  // 处理并发读
+                impl::apply_read(read_requests);
+        }
 
-        if (config.read_policy == ReadPolicy::Exclusive) {  // 处理互斥读
-            impl::check_exclusive_read(read_requests);
-        }
-        if (config.write_policy == WritePolicy::Exclusive) {  // 处理互斥写
-            impl::check_exclusive_write(write_requests);
-            impl::apply_exclusive_common_write(write_requests);
-        }
-        if (config.write_policy == WritePolicy::Common) {  // 处理公共写
-            impl::check_common_write(write_requests);
-            impl::apply_exclusive_common_write(write_requests);
-        }
-        if (config.write_policy == WritePolicy::Add) {  // 处理合并写
-            impl::apply_combining_write(write_requests, std::plus<T>{});
-        } else if (config.write_policy == WritePolicy::Max) {
-            impl::apply_combining_write(write_requests, [](const T& a, const T& b) { return std::max(a, b); });
-        } else if (config.write_policy == WritePolicy::Min) {
-            impl::apply_combining_write(write_requests, [](const T& a, const T& b) { return std::min(a, b); });
+        switch (model.write_policy) {
+            case impl::WritePolicy::Exclusive:  // 处理互斥写
+                impl::check_exclusive_write(write_requests);
+                impl::apply_write(write_requests);
+                break;
+            case impl::WritePolicy::Common:  // 处理公共写
+                impl::check_common_write(write_requests);
+                impl::apply_write(write_requests);
+                break;
+            case impl::WritePolicy::Arbitrary:  // 处理任意写
+                impl::apply_write(write_requests);
+                break;
+            case impl::WritePolicy::Add:  // 处理合并写 加法
+                impl::apply_combining_write(write_requests, std::plus<T>{});
+                break;
+            case impl::WritePolicy::Max:  // 处理合并写 取最大值
+                impl::apply_combining_write(write_requests, [](const T& a, const T& b) { return std::max(a, b); });
+                break;
+            case impl::WritePolicy::Min:  // 处理合并写 取最小值
+                impl::apply_combining_write(write_requests, [](const T& a, const T& b) { return std::min(a, b); });
+                break;
         }
 
         read_requests.clear();

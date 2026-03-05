@@ -1,24 +1,21 @@
 #include <print>
 #include <ranges>
 
-#include "base/assert.h"
-#include "pram/runtime.h"
+#include "pram/pram.h"
 
 int main() try {
-    pram::Runtime runtime{};
-    runtime.default_memory_config = {
-        .read_policy = pram::ReadPolicy::Concurrent, .write_policy = pram::WritePolicy::Exclusive};
+    pram::Machine machine{pram::CREW};
 
     constexpr size_t size = 16;
-    auto array = runtime.allocate<int>(std::views::iota(0zU, size) | std::ranges::to<std::vector<int>>());
+    auto& array = machine.allocate<int>(std::views::iota(0zU, size) | std::ranges::to<std::vector<int>>());
 
-    runtime.parallel(size, [&](size_t pid) -> pram::Task {
+    machine.parallel(size, [&](size_t pid) -> pram::Task {
         std::println("pid={}", pid);
-        std::println("load={}", co_await array->load(pid));
-        co_await array->store(pid, 1);
-        std::println("load={}", co_await array->load(pid));
+        std::println("read {}", co_await array.read(pid));
+        co_await array.write(pid, 1);
+        std::println("read {}", co_await array.read(pid));
     });
-} catch (const assertion_error& e) {
+} catch (const pram::assertion_error& e) {
     std::println("Assertion error: {}", e.what());
     return 1;
 } catch (const std::exception& e) {

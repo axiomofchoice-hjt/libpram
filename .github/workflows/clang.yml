@@ -33,12 +33,9 @@ jobs:
       - name: Run clang-format (check only)
         run: |
           clang-format --version
-          files=$(find src -name '*.cpp' -o -name '*.h')
+          files=$(git ls-files '*.cpp' '*.h')
           clang-format --dry-run --Werror $files
 
       - name: Run clang-tidy
         run: |
-          clang-tidy --version
-          clang-tidy \
-            -p build \
-            $(find src -name '*.cpp')
+          run-clang-tidy -p build
