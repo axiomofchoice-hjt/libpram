@@ -45,24 +45,24 @@ struct Task {
 };
 
 struct Machine {
-    std::vector<Memory*> memories;
+    std::vector<std::unique_ptr<Memory>> memories;
     Model model;
 
     Machine() : model{CREW} {}
     Machine(Model model) : model(model) {}
 
     template <typename T>
-    std::unique_ptr<SharedArray<T>> allocate(this auto&& self, size_t length) {
+    SharedArray<T>& allocate(this auto&& self, size_t length) {
         auto array = std::make_unique<SharedArray<T>>(length, self.model);
-        self.memories.push_back(array.get());
-        return array;
+        self.memories.push_back(std::move(array));
+        return *static_cast<SharedArray<T>*>(self.memories.back().get());
     }
 
     template <typename T>
-    std::unique_ptr<SharedArray<T>> allocate(this auto&& self, std::vector<T> data) {
+    SharedArray<T>& allocate(this auto&& self, std::vector<T> data) {
         auto array = std::make_unique<SharedArray<T>>(std::move(data), self.model);
-        self.memories.push_back(array.get());
-        return array;
+        self.memories.push_back(std::move(array));
+        return *static_cast<SharedArray<T>*>(self.memories.back().get());
     }
 
     void parallel(size_t n_processors, auto&& func) {
