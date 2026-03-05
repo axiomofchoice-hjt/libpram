@@ -28,9 +28,7 @@ struct WriteAwaitable {
 };
 
 struct Memory {
-    virtual void start_round() = 0;
-    virtual void end_round() = 0;
-
+    virtual void commit() = 0;
     virtual ~Memory() = default;
 };
 
@@ -112,10 +110,8 @@ struct SharedArray : Memory {
         return WriteAwaitable<T>{};
     }
 
-    void start_round() override { std::println("start_round"); }
-
-    void end_round() override {
-        std::println("end_round");
+    void commit() override {
+        std::println("commit");
         std::ranges::sort(read_requests);
         std::ranges::sort(write_requests,
             [](const impl::WriteRequest<T>& a, const impl::WriteRequest<T>& b) { return a.address < b.address; });

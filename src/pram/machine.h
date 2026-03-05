@@ -75,10 +75,6 @@ struct Machine {
 
         while (active) {
             active = false;
-
-            for (auto& mem : memories) {
-                mem->start_round();
-            }
             for (auto& t : tasks) {
                 if (!t.handle.done()) {
                     active = true;
@@ -86,7 +82,7 @@ struct Machine {
                 }
             }
             for (auto& mem : memories) {
-                mem->end_round();
+                mem->commit();
             }
         }
     }
