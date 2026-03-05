@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base/assert.h"
+#include "model.h"
 
 namespace pram {
 template <typename T>
@@ -24,25 +25,6 @@ struct WriteAwaitable {
     bool await_ready() const noexcept { return false; }
     bool await_suspend([[maybe_unused]] std::coroutine_handle<> _) noexcept { return true; }
     void await_resume() noexcept {}
-};
-
-enum class ReadPolicy : uint8_t {
-    Exclusive,   // 互斥读
-    Concurrent,  // 并发读
-};
-
-enum class WritePolicy : uint8_t {
-    Exclusive,  // 互斥写
-    Common,     // 公共写
-    Arbitrary,  // 任意写
-    Add,        // 合并写 加法
-    Max,        // 合并写 取最大值
-    Min,        // 合并写 取最小值
-};
-
-struct MemoryConfig {
-    ReadPolicy read_policy;
-    WritePolicy write_policy;
 };
 
 struct Memory {
@@ -111,14 +93,14 @@ void apply_combining_write(const std::vector<WriteRequest<T>>& write_requests, c
 template <typename T>
 struct SharedArray : Memory {
     std::vector<T> data;
-    MemoryConfig config;
+    Model model;
 
     std::vector<T*> read_requests;
     std::vector<impl::WriteRequest<T>> write_requests;
 
-    SharedArray(size_t length, MemoryConfig config) : data(std::vector<T>(length)), config(config) {}
+    SharedArray(size_t length, Model model) : data(std::vector<T>(length)), model(model) {}
 
-    SharedArray(std::vector<T> data, MemoryConfig config) : data(std::move(data)), config(config) {}
+    SharedArray(std::vector<T> data, Model model) : data(std::move(data)), model(model) {}
 
     ReadAwaitable<T> read(size_t index) {
         read_requests.push_back(&data[index]);
@@ -138,22 +120,22 @@ struct SharedArray : Memory {
         std::ranges::sort(write_requests,
             [](const impl::WriteRequest<T>& a, const impl::WriteRequest<T>& b) { return a.address < b.address; });
 
-        if (config.read_policy == ReadPolicy::Exclusive) {  // 处理互斥读
+        if (model.read_policy == impl::ReadPolicy::Exclusive) {  // 处理互斥读
             impl::check_exclusive_read(read_requests);
         }
-        if (config.write_policy == WritePolicy::Exclusive) {  // 处理互斥写
+        if (model.write_policy == impl::WritePolicy::Exclusive) {  // 处理互斥写
             impl::check_exclusive_write(write_requests);
             impl::apply_exclusive_common_write(write_requests);
         }
-        if (config.write_policy == WritePolicy::Common) {  // 处理公共写
+        if (model.write_policy == impl::WritePolicy::Common) {  // 处理公共写
             impl::check_common_write(write_requests);
             impl::apply_exclusive_common_write(write_requests);
         }
-        if (config.write_policy == WritePolicy::Add) {  // 处理合并写
+        if (model.write_policy == impl::WritePolicy::Add) {  // 处理合并写
             impl::apply_combining_write(write_requests, std::plus<T>{});
-        } else if (config.write_policy == WritePolicy::Max) {
+        } else if (model.write_policy == impl::WritePolicy::Max) {
             impl::apply_combining_write(write_requests, [](const T& a, const T& b) { return std::max(a, b); });
-        } else if (config.write_policy == WritePolicy::Min) {
+        } else if (model.write_policy == impl::WritePolicy::Min) {
             impl::apply_combining_write(write_requests, [](const T& a, const T& b) { return std::min(a, b); });
         }
 

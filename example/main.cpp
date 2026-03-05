@@ -4,9 +4,7 @@
 #include "pram/pram.h"
 
 int main() try {
-    pram::Machine machine{};
-    machine.default_memory_config = {
-        .read_policy = pram::ReadPolicy::Concurrent, .write_policy = pram::WritePolicy::Exclusive};
+    pram::Machine machine{pram::CREW};
 
     constexpr size_t size = 16;
     auto array = machine.allocate<int>(std::views::iota(0zU, size) | std::ranges::to<std::vector<int>>());

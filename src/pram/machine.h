@@ -46,21 +46,21 @@ struct Task {
 
 struct Machine {
     std::vector<Memory*> memories;
+    Model model;
 
-    MemoryConfig default_memory_config;
+    Machine() : model{CREW} {}
+    Machine(Model model) : model(model) {}
 
     template <typename T>
-    std::unique_ptr<SharedArray<T>> allocate(
-        this auto&& self, size_t length, std::optional<MemoryConfig> config = std::nullopt) {
-        auto array = std::make_unique<SharedArray<T>>(length, config.value_or(self.default_memory_config));
+    std::unique_ptr<SharedArray<T>> allocate(this auto&& self, size_t length) {
+        auto array = std::make_unique<SharedArray<T>>(length, self.model);
         self.memories.push_back(array.get());
         return array;
     }
 
     template <typename T>
-    std::unique_ptr<SharedArray<T>> allocate(
-        this auto&& self, std::vector<T> data, std::optional<MemoryConfig> config = std::nullopt) {
-        auto array = std::make_unique<SharedArray<T>>(std::move(data), config.value_or(self.default_memory_config));
+    std::unique_ptr<SharedArray<T>> allocate(this auto&& self, std::vector<T> data) {
+        auto array = std::make_unique<SharedArray<T>>(std::move(data), self.model);
         self.memories.push_back(array.get());
         return array;
     }
