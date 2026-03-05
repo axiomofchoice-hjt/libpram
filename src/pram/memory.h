@@ -87,7 +87,7 @@ void check_common_write(const std::vector<WriteRequest<T>>& write_requests) {
 }
 
 template <typename T>
-void apply_exclusive_common_write(const std::vector<WriteRequest<T>>& write_requests) {
+void apply_write(const std::vector<WriteRequest<T>>& write_requests) {
     for (const auto& req : write_requests) {
         *req.internal_ref = req.value;
     }
@@ -139,31 +139,36 @@ struct SharedArray : Memory {
             return a.internal_ref < b.internal_ref;
         });
 
-        if (model.read_policy == impl::ReadPolicy::Exclusive) {  // 处理互斥读
-            impl::check_exclusive_read(read_requests);
-            impl::apply_read(read_requests);
-        }
-        if (model.read_policy == impl::ReadPolicy::Concurrent) {  // 处理并发读
-            impl::apply_read(read_requests);
+        switch (model.read_policy) {
+            case impl::ReadPolicy::Exclusive:  // 处理互斥读
+                impl::check_exclusive_read(read_requests);
+                impl::apply_read(read_requests);
+                break;
+            case impl::ReadPolicy::Concurrent:  // 处理并发读
+                impl::apply_read(read_requests);
         }
 
-        if (model.write_policy == impl::WritePolicy::Exclusive) {  // 处理互斥写
-            impl::check_exclusive_write(write_requests);
-            impl::apply_exclusive_common_write(write_requests);
-        }
-        if (model.write_policy == impl::WritePolicy::Common) {  // 处理公共写
-            impl::check_common_write(write_requests);
-            impl::apply_exclusive_common_write(write_requests);
-        }
-        if (model.write_policy == impl::WritePolicy::Arbitrary) {  // 处理任意写
-            impl::apply_exclusive_common_write(write_requests);
-        }
-        if (model.write_policy == impl::WritePolicy::Add) {  // 处理合并写
-            impl::apply_combining_write(write_requests, std::plus<T>{});
-        } else if (model.write_policy == impl::WritePolicy::Max) {
-            impl::apply_combining_write(write_requests, [](const T& a, const T& b) { return std::max(a, b); });
-        } else if (model.write_policy == impl::WritePolicy::Min) {
-            impl::apply_combining_write(write_requests, [](const T& a, const T& b) { return std::min(a, b); });
+        switch (model.write_policy) {
+            case impl::WritePolicy::Exclusive:  // 处理互斥写
+                impl::check_exclusive_write(write_requests);
+                impl::apply_write(write_requests);
+                break;
+            case impl::WritePolicy::Common:  // 处理公共写
+                impl::check_common_write(write_requests);
+                impl::apply_write(write_requests);
+                break;
+            case impl::WritePolicy::Arbitrary:  // 处理任意写
+                impl::apply_write(write_requests);
+                break;
+            case impl::WritePolicy::Add:  // 处理合并写 加法
+                impl::apply_combining_write(write_requests, std::plus<T>{});
+                break;
+            case impl::WritePolicy::Max:  // 处理合并写 取最大值
+                impl::apply_combining_write(write_requests, [](const T& a, const T& b) { return std::max(a, b); });
+                break;
+            case impl::WritePolicy::Min:  // 处理合并写 取最小值
+                impl::apply_combining_write(write_requests, [](const T& a, const T& b) { return std::min(a, b); });
+                break;
         }
 
         read_requests.clear();
