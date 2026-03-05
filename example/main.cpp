@@ -17,7 +17,7 @@ int main() try {
         co_await array->store(pid, 1);
         std::println("load={}", co_await array->load(pid));
     });
-} catch (const assertion_error& e) {
+} catch (const pram::assertion_error& e) {
     std::println("Assertion error: {}", e.what());
     return 1;
 } catch (const std::exception& e) {

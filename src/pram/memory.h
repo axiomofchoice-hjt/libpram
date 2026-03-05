@@ -52,13 +52,12 @@ struct Memory {
     virtual ~Memory() = default;
 };
 
+namespace impl {
 template <typename T>
 struct WriteRequest {
     T* address;
     T value;
 };
-
-namespace impl {
 
 namespace {
 template <typename T>
@@ -115,7 +114,7 @@ struct Array : Memory {
     MemoryConfig config;
 
     std::vector<T*> read_requests;
-    std::vector<WriteRequest<T>> write_requests;
+    std::vector<impl::WriteRequest<T>> write_requests;
 
     Array(size_t length, MemoryConfig config) : data(std::vector<T>(length)), config(config) {}
 
@@ -136,8 +135,8 @@ struct Array : Memory {
     void end_round() override {
         std::println("end_round");
         std::ranges::sort(read_requests);
-        std::ranges::sort(
-            write_requests, [](const WriteRequest<T>& a, const WriteRequest<T>& b) { return a.address < b.address; });
+        std::ranges::sort(write_requests,
+            [](const impl::WriteRequest<T>& a, const impl::WriteRequest<T>& b) { return a.address < b.address; });
 
         if (config.read_policy == ReadPolicy::Exclusive) {  // 处理互斥读
             impl::check_exclusive_read(read_requests);

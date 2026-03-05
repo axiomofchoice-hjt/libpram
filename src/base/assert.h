@@ -4,6 +4,7 @@
 #include <source_location>
 #include <stdexcept>
 
+namespace pram {
 struct assertion_error : std::logic_error {
     using std::logic_error::logic_error;
 };
@@ -14,3 +15,4 @@ inline void assert_or_throw(bool condition, std::string_view message = "empty me
         throw assertion_error(std::format("Assertion failed at {}:{}: {}", loc.file_name(), loc.line(), message));
     }
 }
+}  // namespace pram
