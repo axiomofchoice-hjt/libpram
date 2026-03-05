@@ -52,7 +52,7 @@ struct Machine {
     template <typename T>
     std::unique_ptr<Array<T>> allocate(
         this auto&& self, size_t length, std::optional<MemoryConfig> config = std::nullopt) {
-        auto array = std::make_unique<Array<T>>(length, &self, config.value_or(self.default_memory_config));
+        auto array = std::make_unique<Array<T>>(length, config.value_or(self.default_memory_config));
         self.memories.push_back(array.get());
         return array;
     }
@@ -60,7 +60,7 @@ struct Machine {
     template <typename T>
     std::unique_ptr<Array<T>> allocate(
         this auto&& self, std::vector<T> data, std::optional<MemoryConfig> config = std::nullopt) {
-        auto array = std::make_unique<Array<T>>(std::move(data), &self, config.value_or(self.default_memory_config));
+        auto array = std::make_unique<Array<T>>(std::move(data), config.value_or(self.default_memory_config));
         self.memories.push_back(array.get());
         return array;
     }
