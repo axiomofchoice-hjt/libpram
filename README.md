@@ -1,6 +1,6 @@
 # libpram
 
-libpram 是一个基于 C++ 实现的 PRAM（Parallel Random Access Machine）运行时库，用于并行复杂度实验与模型验证。
+libpram 是 C++ Header Only 库，实现了一个 PRAM（Parallel Random Access Machine）运行时，用于并行复杂度实验与模型验证。
 
 ## 1. 使用 xmake 构建
 
@@ -13,7 +13,15 @@ xmake
 
 命令 `xmake run` 可以运行 example 的程序。
 
-## 2. 示例
+## 2. 命令行构建
+
+```bash
+g++ example/main.cpp -I src -std=c++23
+```
+
+命令 `./a.out` 可以运行 example 的程序。
+
+## 3. 示例
 
 使用 CRCW_Add PRAM 进行 $O(1)$ 排序。目前同步机制是，每次 read / write 会触发全局同步。
 
@@ -47,7 +55,7 @@ machine.parallel(size, [&](size_t pid) -> pram::Task {
 });
 ```
 
-## 3. 未实现的特性
+## 4. 未实现的特性
 
 - EREW, CREW 读和写冲突检查。
 - 随机的 arbitrary CRCW。
