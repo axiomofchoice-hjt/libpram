@@ -7,7 +7,6 @@ add_rules("mode.debug", "mode.release")
 target("pram")
     set_kind("headeronly")
     add_includedirs("src", {public = true})
-    add_cxxflags("-Wall", "-Wextra", "-Wpedantic", "-Werror")
 
 target("example")
     set_kind("binary")
