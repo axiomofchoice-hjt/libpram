@@ -35,8 +35,6 @@ void parallel_sort() {
         int value_j = co_await array.read(j);
         if (std::pair{value_i, i} > std::pair{value_j, j}) {
             co_await counter.write(i, 1);
-        } else {
-            co_await counter.write(i, 0);
         }
     });
 
