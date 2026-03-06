@@ -1,10 +1,8 @@
 #pragma once
 
 #include <algorithm>
-#include <coroutine>
 #include <cstddef>
 #include <functional>
-#include <print>
 #include <utility>
 #include <vector>
 
@@ -16,7 +14,6 @@ namespace impl {
 template <typename T>
 struct ReadRequest {
     T* internal_ref;
-    T* external_ref;
 };
 
 template <typename T>
@@ -25,30 +22,6 @@ struct WriteRequest {
     T value;
 };
 }  // namespace impl
-
-template <typename T>
-struct ReadAwaitable {
-    std::vector<impl::ReadRequest<T>>* read_requests;
-    T* internal_ref;
-    T value;
-    bool await_ready() const noexcept { return false; }
-    void await_suspend([[maybe_unused]] std::coroutine_handle<> _) noexcept {
-        read_requests->push_back({internal_ref, &value});
-    }
-    T await_resume() noexcept { return value; }
-};
-
-template <typename T>
-struct WriteAwaitable {
-    std::vector<impl::WriteRequest<T>>* write_requests;
-    T* internal_ref;
-    T value;
-    bool await_ready() const noexcept { return false; }
-    void await_suspend([[maybe_unused]] std::coroutine_handle<> _) noexcept {
-        write_requests->push_back({internal_ref, value});
-    }
-    void await_resume() noexcept {}
-};
 
 struct Memory {
     virtual void commit() = 0;
@@ -62,13 +35,6 @@ void check_exclusive_read(const std::vector<ReadRequest<T>>& read_requests) {
         if (read_requests[i].internal_ref == read_requests[i + 1].internal_ref) {
             assert_or_throw(false, "Read conflict: exclusive read to the same address");
         }
-    }
-}
-
-template <typename T>
-void apply_read(const std::vector<ReadRequest<T>>& read_requests) {
-    for (const auto& req : read_requests) {
-        *req.external_ref = *req.internal_ref;
     }
 }
 
@@ -123,20 +89,12 @@ struct SharedArray : Memory {
 
     SharedArray(std::vector<T> data, Model model) : data(std::move(data)), model(model) {}
 
-    ReadAwaitable<T> read(size_t index) {
-        ReadAwaitable<T> a;
-        a.internal_ref = &data[index];
-        a.read_requests = &read_requests;
-        return a;
+    T operator[](size_t index) {
+        read_requests.push_back({&data[index]});
+        return data[index];
     }
 
-    WriteAwaitable<T> write(size_t index, T value) {
-        WriteAwaitable<T> a;
-        a.internal_ref = &data[index];
-        a.write_requests = &write_requests;
-        a.value = value;
-        return a;
-    }
+    void write(size_t index, T value) { write_requests.push_back({&data[index], value}); }
 
     void commit() override {
         // std::println("commit");
@@ -150,10 +108,9 @@ struct SharedArray : Memory {
         switch (model.read_policy) {
             case impl::ReadPolicy::Exclusive:  // 处理互斥读
                 impl::check_exclusive_read(read_requests);
-                impl::apply_read(read_requests);
                 break;
             case impl::ReadPolicy::Concurrent:  // 处理并发读
-                impl::apply_read(read_requests);
+                break;
         }
 
         switch (model.write_policy) {

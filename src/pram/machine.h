@@ -44,6 +44,14 @@ struct Task {
     ~Task() { destroy(); }
 };
 
+struct BarrierAwaitable {
+    struct Machine* machine;
+
+    bool await_ready([[maybe_unused]] this auto&& self) noexcept { return false; }
+    void await_suspend([[maybe_unused]] std::coroutine_handle<> _) noexcept {}
+    void await_resume() noexcept {}
+};
+
 struct Machine {
     std::vector<std::unique_ptr<Memory>> memories;
     Model model;
@@ -86,5 +94,7 @@ struct Machine {
             }
         }
     }
+
+    BarrierAwaitable barrier() { return BarrierAwaitable{this}; }
 };
 }  // namespace pram

@@ -36,22 +36,24 @@ std::mt19937 gen{std::random_device{}()};
 auto data = std::views::iota(1, static_cast<int>(size + 1)) | std::ranges::to<std::vector>();
 std::ranges::shuffle(data, gen);
 auto& array = machine.allocate<int>(std::move(data));
-auto& counter = machine.allocate<size_t>(size);
+auto& rank = machine.allocate<size_t>(size);
 
 machine.parallel(size * size, [&](size_t pid) -> pram::Task {
     size_t i = pid / size;
     size_t j = pid % size;
-    int value_i = co_await array.read(i);
-    int value_j = co_await array.read(j);
+    int value_i = array[i];
+    int value_j = array[j];
     if (std::pair{value_i, i} > std::pair{value_j, j}) {
-        co_await counter.write(i, 1);
+        rank.write(i, 1);
     }
+    co_await machine.barrier();
 });
 
 machine.parallel(size, [&](size_t pid) -> pram::Task {
-    size_t index = co_await counter.read(pid);
-    int value = co_await array.read(pid);
-    co_await array.write(index, value);
+    size_t index = rank[pid];
+    int value = array[pid];
+    array.write(index, value);
+    co_await machine.barrier();
 });
 ```
 
