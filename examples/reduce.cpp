@@ -5,7 +5,7 @@
 #include "format.h"  // IWYU pragma: keep
 #include "pram/pram.h"
 
-void sum() {
+void reduce() {
     constexpr size_t size = 8;
 
     pram::Machine machine{size, pram::EREW};
@@ -44,14 +44,14 @@ void sum() {
 
     std::println("output: {}", output);
     int expected = std::ranges::fold_left(input.data, 0, std::plus{});
-    pram::assert_or_throw(output.data[0] == expected, "Sum does not match expected value.");
+    pram::assert_or_throw(output.data[0] == expected, "Reduce does not match expected value.");
     std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", machine.n_processors, machine.round_count(),
         machine.read_count(), machine.write_count());
 }
 
 int main() try {
-    std::println("===== example: sum =====");
-    sum();
+    std::println("===== example: reduce =====");
+    reduce();
 } catch (const pram::assertion_error& e) {
     std::println("Assertion error: {}", e.what());
     return 1;
