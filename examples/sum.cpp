@@ -15,7 +15,7 @@ void sum() {
     std::vector<int> data;
     std::ranges::for_each(std::views::iota(0zU, size), [&](int) { data.push_back(dis(gen)); });
     std::ranges::shuffle(data, gen);
-    auto& input = machine.allocate<int>(std::move(data));
+    auto& input = machine.allocate<int>(data);
     auto& output = machine.allocate<int>(1);
     auto& buffer = machine.allocate<int>(size);
 
@@ -43,7 +43,8 @@ void sum() {
     });
 
     std::println("output: {}", output);
-    std::println("expected: {}", std::ranges::fold_left(input.data, 0, std::plus{}));
+    int expected = std::ranges::fold_left(input.data, 0, std::plus{});
+    pram::assert_or_throw(output.data[0] == expected, "Sum does not match expected value.");
     std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", machine.n_processors, machine.round_count(),
         machine.read_count(), machine.write_count());
 }
