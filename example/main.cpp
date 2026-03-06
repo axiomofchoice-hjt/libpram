@@ -36,11 +36,11 @@ void parallel_sort() {
         if (std::pair{value_i, i} > std::pair{value_j, j}) {
             rank.write(i, 1);
         }
-        co_await machine.barrier();
+        co_await pram::barrier();
         if (j == 0) {
             array.write(rank[i], value_i);
         }
-        co_await machine.barrier();
+        co_await pram::barrier();
     });
 
     print(array);

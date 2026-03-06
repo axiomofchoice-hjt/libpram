@@ -45,8 +45,6 @@ struct Task {
 };
 
 struct BarrierAwaitable {
-    struct Machine* machine;
-
     bool await_ready([[maybe_unused]] this auto&& self) noexcept { return false; }
     void await_suspend([[maybe_unused]] std::coroutine_handle<> _) noexcept {}
     void await_resume() noexcept {}
@@ -94,7 +92,7 @@ struct Machine {
             }
         }
     }
-
-    BarrierAwaitable barrier() { return BarrierAwaitable{this}; }
 };
+
+BarrierAwaitable barrier() { return BarrierAwaitable{}; }
 }  // namespace pram
