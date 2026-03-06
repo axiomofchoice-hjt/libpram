@@ -23,7 +23,7 @@ g++ example/main.cpp -I src -std=c++23
 
 ## 3. 示例
 
-使用 CRCW_Add PRAM 进行 $O(1)$ 排序。目前同步机制是，每次 read / write 会触发全局同步。
+使用 CRCW_Add PRAM 进行 $O(1)$ 排序。
 
 完整示例见 example/main.cpp: parallel_sort。
 
@@ -47,12 +47,9 @@ machine.parallel(size * size, [&](size_t pid) -> pram::Task {
         rank.write(i, 1);
     }
     co_await machine.barrier();
-});
-
-machine.parallel(size, [&](size_t pid) -> pram::Task {
-    size_t index = rank[pid];
-    int value = array[pid];
-    array.write(index, value);
+    if (j == 0) {
+        array.write(rank[i], value_i);
+    }
     co_await machine.barrier();
 });
 ```

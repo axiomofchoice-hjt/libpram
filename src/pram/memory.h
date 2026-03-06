@@ -105,6 +105,18 @@ struct SharedArray : Memory {
             return a.internal_ref < b.internal_ref;
         });
 
+        {
+            for (size_t i = 0, j = 0; i < read_requests.size() && j < write_requests.size();) {
+                if (read_requests[i].internal_ref < write_requests[j].internal_ref) {
+                    i++;
+                } else if (read_requests[i].internal_ref > write_requests[j].internal_ref) {
+                    j++;
+                } else {
+                    assert_or_throw(false, "Read-write conflict: read and write to the same address");
+                }
+            }
+        }
+
         switch (model.read_policy) {
             case impl::ReadPolicy::Exclusive:  // 处理互斥读
                 impl::check_exclusive_read(read_requests);

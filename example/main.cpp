@@ -37,12 +37,9 @@ void parallel_sort() {
             rank.write(i, 1);
         }
         co_await machine.barrier();
-    });
-
-    machine.parallel(size, [&](size_t pid) -> pram::Task {
-        size_t index = rank[pid];
-        int value = array[pid];
-        array.write(index, value);
+        if (j == 0) {
+            array.write(rank[i], value_i);
+        }
         co_await machine.barrier();
     });
 
