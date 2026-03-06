@@ -54,8 +54,10 @@ struct Machine {
     std::vector<std::unique_ptr<Memory>> memories;
     Model model;
 
-    Machine() : model{CREW} {}
-    Machine(Model model) : model(model) {}
+    size_t round_counter;
+
+    Machine() : model{CREW}, round_counter(0) {}
+    Machine(Model model) : model(model), round_counter(0) {}
 
     template <typename T>
     SharedArray<T>& allocate(this auto&& self, size_t length) {
@@ -87,11 +89,26 @@ struct Machine {
                     t.handle.resume();
                 }
             }
-            for (auto& mem : memories) {
-                mem->commit();
+            if (active) {
+                for (auto& mem : memories) {
+                    mem->commit();
+                }
+                round_counter++;
             }
         }
     }
+
+    size_t read_count() const {
+        return std::ranges::fold_left(
+            memories, 0ULL, [](size_t acc, const std::unique_ptr<Memory>& mem) { return acc + mem->read_count(); });
+    }
+
+    size_t write_count() const {
+        return std::ranges::fold_left(
+            memories, 0ULL, [](size_t acc, const std::unique_ptr<Memory>& mem) { return acc + mem->write_count(); });
+    }
+
+    size_t round_count() const { return round_counter; }
 };
 
 BarrierAwaitable barrier() { return BarrierAwaitable{}; }

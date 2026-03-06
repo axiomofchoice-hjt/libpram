@@ -50,7 +50,6 @@ machine.parallel(size * size, [&](size_t pid) -> pram::Task {
     if (j == 0) {
         array.write(rank[i], value_i);
     }
-    co_await pram::barrier();
 });
 ```
 

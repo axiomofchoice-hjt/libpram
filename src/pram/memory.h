@@ -25,6 +25,8 @@ struct WriteRequest {
 
 struct Memory {
     virtual void commit() = 0;
+    virtual size_t read_count() const = 0;
+    virtual size_t write_count() const = 0;
     virtual ~Memory() = default;
 };
 
@@ -85,9 +87,14 @@ struct SharedArray : Memory {
     std::vector<impl::ReadRequest<T>> read_requests;
     std::vector<impl::WriteRequest<T>> write_requests;
 
-    SharedArray(size_t length, Model model) : data(std::vector<T>(length)), model(model) {}
+    size_t read_counter;
+    size_t write_counter;
 
-    SharedArray(std::vector<T> data, Model model) : data(std::move(data)), model(model) {}
+    SharedArray(size_t length, Model model)
+        : data(std::vector<T>(length)), model(model), read_counter(0), write_counter(0) {}
+
+    SharedArray(std::vector<T> data, Model model)
+        : data(std::move(data)), model(model), read_counter(0), write_counter(0) {}
 
     T operator[](size_t index) {
         read_requests.push_back({&data[index]});
@@ -148,8 +155,14 @@ struct SharedArray : Memory {
                 break;
         }
 
+        read_counter += read_requests.size();
+        write_counter += write_requests.size();
+
         read_requests.clear();
         write_requests.clear();
     }
+
+    size_t read_count() const override { return read_counter; }
+    size_t write_count() const override { return write_counter; }
 };
 }  // namespace pram

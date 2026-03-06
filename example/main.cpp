@@ -40,10 +40,11 @@ void parallel_sort() {
         if (j == 0) {
             array.write(rank[i], value_i);
         }
-        co_await pram::barrier();
     });
 
     print(array);
+    std::println(
+        "Rounds: {}, Reads: {}, Writes: {}", machine.round_count(), machine.read_count(), machine.write_count());
 }
 
 int main() try { parallel_sort(); } catch (const pram::assertion_error& e) {
