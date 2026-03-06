@@ -19,7 +19,7 @@ xmake
 g++ examples/rank_sort.cpp -I src -std=c++23
 ```
 
-等待构建完成，命令 `./a.out` 可以运行 rank_sort。
+等待构建完成，执行命令 `./a.out` 就能运行 rank_sort。
 
 ## 3. 示例
 
