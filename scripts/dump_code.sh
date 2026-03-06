@@ -1,14 +1,8 @@
 #!/bin/sh
 
-find . -type f \
-  ! -path '*/.git/*' \
-  ! -path '*/build/*' \
-  ! -path '*/.cache/*' \
-  ! -path '*/.xmake/*' \
-  ! -path '*/.github/*' \
-  ! -path '*/.clang-*' \
+find src examples xmake.lua -type f \
   -exec echo "===== FILE: {} =====" \; \
   -exec cat {} \; \
   > build/temp
 
-code build/temp
+code --wait build/temp
