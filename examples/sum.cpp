@@ -6,9 +6,9 @@
 #include "pram/pram.h"
 
 void sum() {
-    pram::Machine machine{pram::EREW};
-
     constexpr size_t size = 8;
+
+    pram::Machine machine{size, pram::EREW};
 
     std::mt19937 gen{std::random_device{}()};
     std::uniform_int_distribution<> dis(1, 4);
@@ -21,7 +21,7 @@ void sum() {
 
     std::println("input: {}", input);
 
-    machine.parallel(size, [&](size_t pid) -> pram::Task {
+    machine.parallel([&](size_t pid) -> pram::Task {
         buffer.write(pid, input[pid]);
         co_await pram::barrier();
 
@@ -44,8 +44,8 @@ void sum() {
 
     std::println("output: {}", output);
     std::println("expected: {}", std::ranges::fold_left(input.data, 0, std::plus{}));
-    std::println(
-        "rounds: {}, reads: {}, writes: {}", machine.round_count(), machine.read_count(), machine.write_count());
+    std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", machine.n_processors, machine.round_count(),
+        machine.read_count(), machine.write_count());
 }
 
 int main() try {

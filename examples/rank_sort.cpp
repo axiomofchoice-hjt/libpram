@@ -6,9 +6,9 @@
 #include "pram/pram.h"
 
 void rank_sort() {
-    pram::Machine machine{pram::CRCW_Add};
-
     constexpr size_t size = 8;
+
+    pram::Machine machine{size * size, pram::CRCW_Add};
 
     std::mt19937 gen{std::random_device{}()};
     auto data = std::views::iota(1, static_cast<int>(size + 1)) | std::ranges::to<std::vector>();
@@ -19,7 +19,7 @@ void rank_sort() {
 
     std::println("input: {}", input);
 
-    machine.parallel(size * size, [&](size_t pid) -> pram::Task {
+    machine.parallel([&](size_t pid) -> pram::Task {
         size_t i = pid / size;
         size_t j = pid % size;
         int value_i = input[i];
@@ -34,8 +34,8 @@ void rank_sort() {
     });
 
     std::println("output: {}", output);
-    std::println(
-        "rounds: {}, reads: {}, writes: {}", machine.round_count(), machine.read_count(), machine.write_count());
+    std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", machine.n_processors, machine.round_count(),
+        machine.read_count(), machine.write_count());
 }
 
 int main() try {

@@ -51,13 +51,14 @@ struct BarrierAwaitable {
 };
 
 struct Machine {
-    std::vector<std::unique_ptr<Memory>> memories;
+    size_t n_processors;
     Model model;
+    std::vector<std::unique_ptr<Memory>> memories;
 
     size_t round_counter;
 
-    Machine() : model{CREW}, round_counter(0) {}
-    Machine(Model model) : model(model), round_counter(0) {}
+    Machine(size_t n_processors) : n_processors(n_processors), model{CREW}, round_counter(0) {}
+    Machine(size_t n_processors, Model model) : n_processors(n_processors), model(model), round_counter(0) {}
 
     template <typename T>
     SharedArray<T>& allocate(this auto&& self, size_t length) {
@@ -73,11 +74,11 @@ struct Machine {
         return *static_cast<SharedArray<T>*>(self.memories.back().get());
     }
 
-    void parallel(size_t n_processors, auto&& func) {
+    void parallel(this auto&& self, auto&& func) {
         bool active = true;
         std::vector<Task> tasks;
 
-        for (size_t pid = 0; pid < n_processors; ++pid) {
+        for (size_t pid = 0; pid < self.n_processors; ++pid) {
             tasks.push_back(func(pid));
         }
 
@@ -90,10 +91,10 @@ struct Machine {
                 }
             }
             if (active) {
-                for (auto& mem : memories) {
+                for (auto& mem : self.memories) {
                     mem->commit();
                 }
-                round_counter++;
+                self.round_counter++;
             }
         }
     }
