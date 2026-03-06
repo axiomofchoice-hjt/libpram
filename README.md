@@ -11,7 +11,7 @@ xmake config -m release
 xmake
 ```
 
-命令 `xmake run` 可以运行 examples 的程序。
+等待构建完成，执行命令 `xmake run` 就能运行 examples 的程序。
 
 ## 2. 命令行构建
 
@@ -19,36 +19,37 @@ xmake
 g++ examples/rank_sort.cpp -I src -std=c++23
 ```
 
-命令 `./a.out` 可以运行 rank_sort。
+等待构建完成，命令 `./a.out` 可以运行 rank_sort。
 
 ## 3. 示例
 
-使用 CRCW_Add PRAM 进行排序，$O(n^2)$ 处理器，$O(1)$ 时间复杂度。
+使用 CRCW_Add PRAM 进行排序，$O(n^2)$ 个处理器，$O(1)$ 时间复杂度。
 
 完整示例见 [examples/rank_sort.cpp](examples/rank_sort.cpp)。
 
 ```cpp
-pram::Machine machine{pram::CRCW_Add};
-
 constexpr size_t size = 8;
+
+pram::Machine machine{size * size, pram::CRCW_Add};
 
 std::mt19937 gen{std::random_device{}()};
 auto data = std::views::iota(1, static_cast<int>(size + 1)) | std::ranges::to<std::vector>();
 std::ranges::shuffle(data, gen);
-auto& array = machine.allocate<int>(std::move(data));
+auto& input = machine.allocate<int>(std::move(data));
+auto& output = machine.allocate<int>(size);
 auto& rank = machine.allocate<size_t>(size);
 
-machine.parallel(size * size, [&](size_t pid) -> pram::Task {
+machine.parallel([&](size_t pid) -> pram::Task {
     size_t i = pid / size;
     size_t j = pid % size;
-    int value_i = array[i];
-    int value_j = array[j];
+    int value_i = input[i];
+    int value_j = input[j];
     if (std::pair{value_i, i} > std::pair{value_j, j}) {
         rank.write(i, 1);
     }
     co_await pram::barrier();
     if (j == 0) {
-        array.write(rank[i], value_i);
+        output.write(rank[i], value_i);
     }
 });
 ```
