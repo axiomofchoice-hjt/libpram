@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <exception>
 #include <memory>
+#include <ranges>
 #include <vector>
 
 #include "memory.h"
@@ -76,11 +77,8 @@ struct Machine {
 
     void parallel(this auto&& self, auto&& func) {
         bool active = true;
-        std::vector<Task> tasks;
-
-        for (size_t pid = 0; pid < self.n_processors; ++pid) {
-            tasks.push_back(func(pid));
-        }
+        auto tasks =
+            std::views::iota(0zU, self.n_processors) | std::views::transform(func) | std::ranges::to<std::vector>();
 
         while (active) {
             active = false;
