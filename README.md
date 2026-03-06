@@ -56,6 +56,5 @@ machine.parallel(size * size, [&](size_t pid) -> pram::Task {
 
 ## 4. 未实现的特性
 
-- EREW, CREW 读和写冲突检查。
 - 随机的 arbitrary CRCW。
 - priority CRCW。
