@@ -11,21 +11,21 @@ xmake config -m release
 xmake
 ```
 
-命令 `xmake run` 可以运行 example 的程序。
+命令 `xmake run` 可以运行 examples 的程序。
 
 ## 2. 命令行构建
 
 ```bash
-g++ example/main.cpp -I src -std=c++23
+g++ examples/rank_sort.cpp -I src -std=c++23
 ```
 
-命令 `./a.out` 可以运行 example 的程序。
+命令 `./a.out` 可以运行 rank_sort。
 
 ## 3. 示例
 
-使用 CRCW_Add PRAM 进行 $O(1)$ 排序。
+使用 CRCW_Add PRAM 进行排序，$O(n^2)$ 处理器，$O(1)$ 时间复杂度。
 
-完整示例见 example/main.cpp: parallel_sort。
+完整示例见 [examples/rank_sort.cpp](examples/rank_sort.cpp)。
 
 ```cpp
 pram::Machine machine{pram::CRCW_Add};

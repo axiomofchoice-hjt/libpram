@@ -2,20 +2,10 @@
 #include <random>
 #include <ranges>
 
+#include "format.h"  // IWYU pragma: keep
 #include "pram/pram.h"
 
-void print(const pram::SharedArray<int>& array) {
-    std::print("[");
-    for (size_t i = 0; i < array.data.size(); ++i) {
-        if (i != 0) {
-            std::print(", ");
-        }
-        std::print("{}", array.data[i]);
-    }
-    std::print("]\n");
-}
-
-void parallel_sort() {
+void rank_sort() {
     pram::Machine machine{pram::CRCW_Add};
 
     constexpr size_t size = 8;
@@ -23,34 +13,35 @@ void parallel_sort() {
     std::mt19937 gen{std::random_device{}()};
     auto data = std::views::iota(1, static_cast<int>(size + 1)) | std::ranges::to<std::vector>();
     std::ranges::shuffle(data, gen);
-    auto& array = machine.allocate<int>(std::move(data));
+    auto& input = machine.allocate<int>(std::move(data));
+    auto& output = machine.allocate<int>(size);
     auto& rank = machine.allocate<size_t>(size);
 
-    print(array);
+    std::println("input: {}", input);
 
     machine.parallel(size * size, [&](size_t pid) -> pram::Task {
         size_t i = pid / size;
         size_t j = pid % size;
-        int value_i = array[i];
-        int value_j = array[j];
+        int value_i = input[i];
+        int value_j = input[j];
         if (std::pair{value_i, i} > std::pair{value_j, j}) {
             rank.write(i, 1);
         }
         co_await pram::barrier();
         if (j == 0) {
-            array.write(rank[i], value_i);
+            output.write(rank[i], value_i);
         }
     });
 
-    print(array);
+    std::println("output: {}", output);
     std::println(
-        "Rounds: {}, Reads: {}, Writes: {}", machine.round_count(), machine.read_count(), machine.write_count());
+        "rounds: {}, reads: {}, writes: {}", machine.round_count(), machine.read_count(), machine.write_count());
 }
 
-int main() try { parallel_sort(); } catch (const pram::assertion_error& e) {
+int main() try {
+    std::println("===== example: rank_sort =====");
+    rank_sort();
+} catch (const pram::assertion_error& e) {
     std::println("Assertion error: {}", e.what());
-    return 1;
-} catch (const std::exception& e) {
-    std::println("Exception: {}", e.what());
     return 1;
 }
