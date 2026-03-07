@@ -1,9 +1,10 @@
+#include <pramsim/pramsim.h>
+
 #include <print>
 #include <random>
 #include <ranges>
 
 #include "format.h"  // IWYU pragma: keep
-#include "pram/pram.h"
 
 void rank_sort() {
     constexpr size_t size = 8;

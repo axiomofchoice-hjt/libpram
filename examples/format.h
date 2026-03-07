@@ -1,8 +1,8 @@
 #pragma once
 
-#include <format>
+#include <pramsim/pramsim.h>
 
-#include "pram/pram.h"
+#include <format>
 
 template <typename T>
 struct std::formatter<pram::SharedArray<T>> {
