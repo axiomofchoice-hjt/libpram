@@ -1,6 +1,8 @@
-# libpram
+# pramsim - A PRAM simulator for parallel algorithm experiments
 
-libpram 是 C++ Header Only 库，实现了一个 PRAM（Parallel Random Access Machine）运行时，用于并行复杂度实验与模型验证。
+pramsim 是一个 PRAM（Parallel Random Access Machine）模拟器，用于并行复杂度实验与模型验证。
+
+特性：现代 C++ / Header Only / 协程。
 
 ## 1. 使用 xmake 构建
 

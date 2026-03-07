@@ -2,7 +2,7 @@
 
 #include <format>
 
-#include "pram/pram.h"
+#include "pramsim/pramsim.h"
 
 template <typename T>
 struct std::formatter<pram::SharedArray<T>> {
