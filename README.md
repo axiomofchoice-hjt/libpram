@@ -30,30 +30,27 @@ g++ examples/rank_sort.cpp -I src -std=c++23
 完整示例见 [examples/rank_sort.cpp](examples/rank_sort.cpp)。
 
 ```cpp
-constexpr size_t size = 8;
+struct RankSortImpl {
+    pram::SharedArray<int>& input;
+    pram::SharedArray<size_t>& rank;
+    pram::SharedArray<int>& output;
 
-pram::Machine machine{size * size, pram::CRCW_Add};
+    pram::Task operator()(size_t pid) {
+        size_t n = input.size();
+        size_t i = pid / n;
+        size_t j = pid % n;
 
-std::mt19937 gen{std::random_device{}()};
-auto data = std::views::iota(1, static_cast<int>(size + 1)) | std::ranges::to<std::vector>();
-std::ranges::shuffle(data, gen);
-auto& input = machine.allocate<int>(std::move(data));
-auto& output = machine.allocate<int>(size);
-auto& rank = machine.allocate<size_t>(size);
-
-machine.parallel([&](size_t pid) -> pram::Task {
-    size_t i = pid / size;
-    size_t j = pid % size;
-    int value_i = input[i];
-    int value_j = input[j];
-    if (std::pair{value_i, i} > std::pair{value_j, j}) {
-        rank.write(i, 1);
+        int value_i = input[i];
+        int value_j = input[j];
+        if (std::pair{value_i, i} > std::pair{value_j, j}) {
+            rank.write(i, 1);
+        }
+        co_await pram::barrier();
+        if (j == 0) {
+            output.write(rank[i], value_i);
+        }
     }
-    co_await pram::barrier();
-    if (j == 0) {
-        output.write(rank[i], value_i);
-    }
-});
+};
 ```
 
 ## 4. 未实现的特性
