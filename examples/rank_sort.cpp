@@ -6,23 +6,16 @@
 
 #include "format.h"  // IWYU pragma: keep
 
-void rank_sort() {
-    constexpr size_t size = 8;
+struct RankSortImpl {
+    pram::SharedArray<int>& input;
+    pram::SharedArray<size_t>& rank;
+    pram::SharedArray<int>& output;
 
-    pram::Machine machine{size * size, pram::CRCW_Add};
+    pram::Task operator()(size_t pid) {
+        size_t n = input.size();
+        size_t i = pid / n;
+        size_t j = pid % n;
 
-    std::mt19937 gen{std::random_device{}()};
-    auto data = std::views::iota(1, static_cast<int>(size + 1)) | std::ranges::to<std::vector>();
-    std::ranges::shuffle(data, gen);
-    auto& input = machine.allocate<int>(data);
-    auto& output = machine.allocate<int>(size);
-    auto& rank = machine.allocate<size_t>(size);
-
-    std::println("input: {}", input);
-
-    machine.parallel([&](size_t pid) -> pram::Task {
-        size_t i = pid / size;
-        size_t j = pid % size;
         int value_i = input[i];
         int value_j = input[j];
         if (std::pair{value_i, i} > std::pair{value_j, j}) {
@@ -32,7 +25,24 @@ void rank_sort() {
         if (j == 0) {
             output.write(rank[i], value_i);
         }
-    });
+    }
+};
+
+void rank_sort() {
+    constexpr size_t n = 8;
+
+    pram::Machine machine{n * n, pram::CRCW_Add};
+
+    std::mt19937 gen{std::random_device{}()};
+    auto data = std::views::iota(1, static_cast<int>(n + 1)) | std::ranges::to<std::vector>();
+    std::ranges::shuffle(data, gen);
+    auto& input = machine.allocate<int>(data);
+    auto& output = machine.allocate<int>(n);
+    auto& rank = machine.allocate<size_t>(n);
+
+    std::println("input: {}", input);
+
+    machine.parallel(RankSortImpl{.input = input, .rank = rank, .output = output});
 
     std::println("output: {}", output);
     std::ranges::sort(data);

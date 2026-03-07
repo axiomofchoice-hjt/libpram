@@ -6,35 +6,36 @@
 
 #include "format.h"  // IWYU pragma: keep
 
-struct PrefixSumImpl {
+struct TreeSumImpl {
     pram::SharedArray<int>& input;
+    pram::SharedArray<int>& buffer;
     pram::SharedArray<int>& output;
 
     pram::Task operator()(size_t pid) {
         size_t n = input.size();
 
-        output.write(pid, input[pid]);
+        buffer.write(pid, input[pid]);
         co_await pram::barrier();
 
         for (size_t stride = 1; stride < n; stride *= 2) {
-            int temp = 0;
-            if (pid >= stride) {
-                temp += output[pid];
+            int value = 0;
+            if (pid % (2 * stride) == 0 && pid + stride < n) {
+                value = buffer[pid] + buffer[pid + stride];
             }
             co_await pram::barrier();
-            if (pid >= stride) {
-                temp += output[pid - stride];
+            if (pid % (2 * stride) == 0 && pid + stride < n) {
+                buffer.write(pid, value);
             }
             co_await pram::barrier();
-            if (pid >= stride) {
-                output.write(pid, temp);
-            }
-            co_await pram::barrier();
+        }
+
+        if (pid == 0) {
+            output.write(0, buffer[0]);
         }
     }
 };
 
-void prefix_sum() {
+void tree_sum() {
     constexpr size_t n = 8;
 
     pram::Machine machine{n, pram::EREW};
@@ -45,23 +46,23 @@ void prefix_sum() {
     std::ranges::for_each(std::views::iota(0zU, n), [&](int) { data.push_back(dis(gen)); });
     std::ranges::shuffle(data, gen);
     auto& input = machine.allocate<int>(data);
-    auto& output = machine.allocate<int>(n);
+    auto& output = machine.allocate<int>(1);
+    auto& buffer = machine.allocate<int>(n);
 
     std::println("input: {}", input);
 
-    machine.parallel(PrefixSumImpl{.input = input, .output = output});
+    machine.parallel(TreeSumImpl{.input = input, .buffer = buffer, .output = output});
 
     std::println("output: {}", output);
-    std::vector<int> prefix_sums;
-    std::partial_sum(data.begin(), data.end(), std::back_inserter(prefix_sums));
-    pram::assert_or_throw(output.data == prefix_sums, "Prefix sums do not match expected values.");
+    int expected = std::ranges::fold_left(input.data, 0, std::plus{});
+    pram::assert_or_throw(output.data[0] == expected, "Reduce does not match expected value.");
     std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", machine.n_processors, machine.round_count(),
         machine.read_count(), machine.write_count());
 }
 
 int main() try {
-    std::println("===== example: prefix_sum =====");
-    prefix_sum();
+    std::println("===== example: tree_sum =====");
+    tree_sum();
 } catch (const pram::assertion_error& e) {
     std::println("Assertion error: {}", e.what());
     return 1;

@@ -96,6 +96,8 @@ struct SharedArray : Memory {
     SharedArray(std::vector<T> data, Model model)
         : data(std::move(data)), model(model), read_counter(0), write_counter(0) {}
 
+    size_t size() const { return data.size(); }
+
     T operator[](size_t index) {
         read_requests.push_back({&data[index]});
         return data[index];
