@@ -4,7 +4,7 @@
 #include <random>
 #include <ranges>
 
-#include "format.h"  // IWYU pragma: keep
+#include "str.h"
 
 /**
  * 双调排序变种，CREW 模型，处理器数 O(n)，时间复杂度 O(log^2{n})
@@ -66,11 +66,11 @@ void bionic_sort() {
     auto& input = machine.allocate<int>(data);
     auto& output = machine.allocate<int>(n);
 
-    std::println("input: {}", input);
+    std::println("input: {}", str(input.data));
 
     machine.parallel(BionicSortImpl{.input = input, .output = output});
 
-    std::println("output: {}", output);
+    std::println("output: {}", str(output.data));
     std::ranges::sort(data);
     pram::assert_or_throw(output.data == data, "Sorted output does not match expected values.");
     std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", machine.n_processors, machine.round_count(),

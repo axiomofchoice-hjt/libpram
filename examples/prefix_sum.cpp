@@ -4,36 +4,32 @@
 #include <random>
 #include <ranges>
 
-#include "format.h"  // IWYU pragma: keep
+#include "str.h"
 
 /**
  * 前缀和，CREW 模型，处理器数 O(n)，时间复杂度 O(logn)
  */
 struct PrefixSumImpl {
-    pram::SharedArray<int>& input;
-    pram::SharedArray<int>& output;
+    pram::SharedArray<int>& array;
 
     pram::Task operator()(size_t pid) {
-        size_t n = input.size();
-
-        output.write(pid, input[pid]);
-        co_await pram::barrier();
+        size_t n = array.size();
 
         for (size_t stride = 1; stride < n; stride *= 2) {
             int temp = 0;
             if (pid >= stride) {
-                temp = output[pid] + output[pid - stride];
+                temp = array[pid] + array[pid - stride];
             }
             co_await pram::barrier();
             if (pid >= stride) {
-                output.write(pid, temp);
+                array.write(pid, temp);
             }
             co_await pram::barrier();
         }
     }
 };
 
-void prefix_sum() {
+void list_ranking() {
     constexpr size_t n = 8;
 
     pram::Machine machine{n, pram::CREW};
@@ -43,24 +39,24 @@ void prefix_sum() {
     std::vector<int> data;
     std::ranges::for_each(std::views::iota(0zU, n), [&](int) { data.push_back(dis(gen)); });
     std::ranges::shuffle(data, gen);
-    auto& input = machine.allocate<int>(data);
-    auto& output = machine.allocate<int>(n);
+    std::vector<int> expected;
+    std::partial_sum(data.begin(), data.end(), std::back_inserter(expected));
 
-    std::println("input: {}", input);
+    auto& array = machine.allocate<int>(data);
 
-    machine.parallel(PrefixSumImpl{.input = input, .output = output});
+    std::println("input: {}", str(array.data));
 
-    std::println("output: {}", output);
-    std::vector<int> prefix_sums;
-    std::partial_sum(data.begin(), data.end(), std::back_inserter(prefix_sums));
-    pram::assert_or_throw(output.data == prefix_sums, "Prefix sums do not match expected values.");
+    machine.parallel(PrefixSumImpl{.array = array});
+    std::println("output: {}", str(array.data));
+    std::println("expected: {}", str(expected));
+    pram::assert_or_throw(array.data == expected, "Prefix sums do not match expected values.");
     std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", machine.n_processors, machine.round_count(),
         machine.read_count(), machine.write_count());
 }
 
 int main() try {
     std::println("===== example: prefix_sum =====");
-    prefix_sum();
+    list_ranking();
 } catch (const pram::assertion_error& e) {
     std::println("Assertion error: {}", e.what());
     return 1;

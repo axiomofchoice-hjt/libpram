@@ -4,7 +4,7 @@
 #include <random>
 #include <ranges>
 
-#include "format.h"  // IWYU pragma: keep
+#include "str.h"
 
 /**
  * 树形求和，CREW 模型，处理器数 O(n)，时间复杂度 O(logn)
@@ -52,11 +52,11 @@ void tree_sum() {
     auto& output = machine.allocate<int>(1);
     auto& buffer = machine.allocate<int>(n);
 
-    std::println("input: {}", input);
+    std::println("input: {}", str(input.data));
 
     machine.parallel(TreeSumImpl{.input = input, .buffer = buffer, .output = output});
 
-    std::println("output: {}", output);
+    std::println("output: {}", str(output.data));
     int expected = std::ranges::fold_left(input.data, 0, std::plus{});
     pram::assert_or_throw(output.data[0] == expected, "Reduce does not match expected value.");
     std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", machine.n_processors, machine.round_count(),

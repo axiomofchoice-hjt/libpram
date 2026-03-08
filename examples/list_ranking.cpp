@@ -4,7 +4,7 @@
 #include <random>
 #include <ranges>
 
-#include "format.h"  // IWYU pragma: keep
+#include "str.h"
 
 /**
  * List Ranking，CREW 模型，处理器数 O(n)，时间复杂度 O(logn)
@@ -54,11 +54,11 @@ void list_ranking() {
     auto& next = machine.allocate<int>(data);
     auto& dist = machine.allocate<size_t>(n);
 
-    std::println("next: {}", next);
+    std::println("next: {}", str(next.data));
 
     machine.parallel(ListRankingImpl{.next = next, .dist = dist});
 
-    std::println("dist: {}", dist);
+    std::println("dist: {}", str(dist.data));
     std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", machine.n_processors, machine.round_count(),
         machine.read_count(), machine.write_count());
 }
