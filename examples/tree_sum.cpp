@@ -6,6 +6,9 @@
 
 #include "format.h"  // IWYU pragma: keep
 
+/**
+ * 树形求和，CREW 模型，处理器数 O(n)，时间复杂度 O(logn)
+ */
 struct TreeSumImpl {
     pram::SharedArray<int>& input;
     pram::SharedArray<int>& buffer;
@@ -38,7 +41,7 @@ struct TreeSumImpl {
 void tree_sum() {
     constexpr size_t n = 8;
 
-    pram::Machine machine{n, pram::EREW};
+    pram::Machine machine{n, pram::CREW};
 
     std::mt19937 gen{std::random_device{}()};
     std::uniform_int_distribution<> dis(1, 4);

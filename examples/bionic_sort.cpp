@@ -6,11 +6,14 @@
 
 #include "format.h"  // IWYU pragma: keep
 
+/**
+ * 双调排序变种，CREW 模型，处理器数 O(n)，时间复杂度 O(log^2{n})
+ * 这个变种可以优雅处理非 2 的幂次的输入规模。
+ */
 struct BionicSortImpl {
     pram::SharedArray<int>& input;
     pram::SharedArray<int>& output;
 
-    /// 双调排序变种，可以优雅地解决非 2 的幂次规模
     pram::Task operator()(size_t pid) {
         size_t n = input.size();
         output.write(pid, input[pid]);

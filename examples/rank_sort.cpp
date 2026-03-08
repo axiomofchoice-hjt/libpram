@@ -6,6 +6,9 @@
 
 #include "format.h"  // IWYU pragma: keep
 
+/**
+ * Rank Sort，CRCW_Add 模型，处理器数 O(n^2)，时间复杂度 O(1)
+ */
 struct RankSortImpl {
     pram::SharedArray<int>& input;
     pram::SharedArray<size_t>& rank;

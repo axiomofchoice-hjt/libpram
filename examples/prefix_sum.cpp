@@ -6,6 +6,9 @@
 
 #include "format.h"  // IWYU pragma: keep
 
+/**
+ * 前缀和，CREW 模型，处理器数 O(n)，时间复杂度 O(logn)
+ */
 struct PrefixSumImpl {
     pram::SharedArray<int>& input;
     pram::SharedArray<int>& output;
@@ -19,11 +22,7 @@ struct PrefixSumImpl {
         for (size_t stride = 1; stride < n; stride *= 2) {
             int temp = 0;
             if (pid >= stride) {
-                temp += output[pid];
-            }
-            co_await pram::barrier();
-            if (pid >= stride) {
-                temp += output[pid - stride];
+                temp = output[pid] + output[pid - stride];
             }
             co_await pram::barrier();
             if (pid >= stride) {
@@ -37,7 +36,7 @@ struct PrefixSumImpl {
 void prefix_sum() {
     constexpr size_t n = 8;
 
-    pram::Machine machine{n, pram::EREW};
+    pram::Machine machine{n, pram::CREW};
 
     std::mt19937 gen{std::random_device{}()};
     std::uniform_int_distribution<> dis(1, 4);
