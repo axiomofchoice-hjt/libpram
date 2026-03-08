@@ -53,7 +53,7 @@ void tree_sum() {
 
     machine.parallel(TreeSumImpl{.array = array, .result = result});
 
-    std::println("output: {}", str(result));
+    std::println("output: {}", result.data[0]);
     std::println("expected: {}", expected);
     pram::assert_or_throw(result.data[0] == expected, "The result does not match expected values.");
     std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", machine.n_processors, machine.round_count(),
