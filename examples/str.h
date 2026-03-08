@@ -1,18 +1,19 @@
 #pragma once
 
 #include <format>
-#include <vector>
 
 #include "pramsim/pramsim.h"
 
-template <typename T>
-std::string str(const std::vector<T>& vec) {
+template <std::ranges::range R>
+std::string str(const R& range) {
     std::string result = "[";
-    for (size_t i = 0; i < vec.size(); ++i) {
-        if (i != 0) {
+    bool first = true;
+    for (const auto& i : range) {
+        if (!first) {
             result += ", ";
         }
-        result += std::format("{}", vec[i]);
+        result += std::format("{}", i);
+        first = false;
     }
     result += "]";
     return result;
@@ -20,13 +21,5 @@ std::string str(const std::vector<T>& vec) {
 
 template <typename T>
 std::string str(const pram::SharedArray<T>& vec) {
-    std::string result = "[";
-    for (size_t i = 0; i < vec.size(); ++i) {
-        if (i != 0) {
-            result += ", ";
-        }
-        result += std::format("{}", vec.data[i]);
-    }
-    result += "]";
-    return result;
+    return str(vec.data);
 }
