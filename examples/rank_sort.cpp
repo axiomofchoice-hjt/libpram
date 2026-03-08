@@ -41,11 +41,11 @@ void rank_sort() {
     auto& array = machine.allocate<int>(data);
     auto& rank = machine.allocate<size_t>(n);
 
-    std::println("input: {}", str(array.data));
+    std::println("input: {}", str(array));
 
     machine.parallel(RankSortImpl{.array = array, .rank = rank});
 
-    std::println("output: {}", str(array.data));
+    std::println("output: {}", str(array));
     std::ranges::sort(data);
     pram::assert_or_throw(array.data == data, "Sorted output does not match expected values.");
     std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", machine.n_processors, machine.round_count(),

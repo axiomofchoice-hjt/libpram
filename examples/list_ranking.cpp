@@ -54,11 +54,11 @@ void list_ranking() {
     auto& next = machine.allocate<int>(data);
     auto& dist = machine.allocate<size_t>(n);
 
-    std::println("next: {}", str(next.data));
+    std::println("next: {}", str(next));
 
     machine.parallel(ListRankingImpl{.next = next, .dist = dist});
 
-    std::println("dist: {}", str(dist.data));
+    std::println("dist: {}", str(dist));
     std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", machine.n_processors, machine.round_count(),
         machine.read_count(), machine.write_count());
 }

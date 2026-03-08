@@ -66,11 +66,11 @@ void bionic_sort() {
     auto& input = machine.allocate<int>(data);
     auto& output = machine.allocate<int>(n);
 
-    std::println("input: {}", str(input.data));
+    std::println("input: {}", str(input));
 
     machine.parallel(BionicSortImpl{.input = input, .output = output});
 
-    std::println("output: {}", str(output.data));
+    std::println("output: {}", str(output));
     std::ranges::sort(data);
     pram::assert_or_throw(output.data == data, "Sorted output does not match expected values.");
     std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", machine.n_processors, machine.round_count(),

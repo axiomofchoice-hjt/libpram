@@ -52,11 +52,11 @@ void tree_sum() {
     auto& output = machine.allocate<int>(1);
     auto& buffer = machine.allocate<int>(n);
 
-    std::println("input: {}", str(input.data));
+    std::println("input: {}", str(input));
 
     machine.parallel(TreeSumImpl{.input = input, .buffer = buffer, .output = output});
 
-    std::println("output: {}", str(output.data));
+    std::println("output: {}", str(output));
     int expected = std::ranges::fold_left(input.data, 0, std::plus{});
     pram::assert_or_throw(output.data[0] == expected, "Reduce does not match expected value.");
     std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", machine.n_processors, machine.round_count(),

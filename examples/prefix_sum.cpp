@@ -44,10 +44,10 @@ void list_ranking() {
 
     auto& array = machine.allocate<int>(data);
 
-    std::println("input: {}", str(array.data));
+    std::println("input: {}", str(array));
 
     machine.parallel(PrefixSumImpl{.array = array});
-    std::println("output: {}", str(array.data));
+    std::println("output: {}", str(array));
     std::println("expected: {}", str(expected));
     pram::assert_or_throw(array.data == expected, "Prefix sums do not match expected values.");
     std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", machine.n_processors, machine.round_count(),
