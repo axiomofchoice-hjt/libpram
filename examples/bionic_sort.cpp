@@ -20,13 +20,10 @@
  * 7: ----#------#------#------#----------#----#--
  */
 struct BionicSortImpl {
-    pram::SharedArray<int>& input;
-    pram::SharedArray<int>& output;
+    pram::SharedArray<int>& array;
 
     pram::Task operator()(size_t pid) {
-        size_t n = input.size();
-        output.write(pid, input[pid]);
-        co_await pram::barrier();
+        size_t n = array.size();
 
         for (size_t k = 2; k <= std::bit_ceil(n); k *= 2) {
             for (size_t i = k / 2; i > 0; i /= 2) {
@@ -38,15 +35,15 @@ struct BionicSortImpl {
                 int val_self = 0;
                 int val_partner = 0;
                 if (pid < partner && partner < n) {
-                    val_self = output[pid];
-                    val_partner = output[partner];
+                    val_self = array[pid];
+                    val_partner = array[partner];
                 }
                 co_await pram::barrier();
 
                 if (pid < partner && partner < n) {
                     if (val_self > val_partner) {
-                        output.write(pid, val_partner);
-                        output.write(partner, val_self);
+                        array.write(pid, val_partner);
+                        array.write(partner, val_self);
                     }
                 }
                 co_await pram::barrier();
@@ -63,16 +60,18 @@ void bionic_sort() {
     std::mt19937 gen{std::random_device{}()};
     auto data = std::views::iota(1, static_cast<int>(n + 1)) | std::ranges::to<std::vector>();
     std::ranges::shuffle(data, gen);
-    auto& input = machine.allocate<int>(data);
-    auto& output = machine.allocate<int>(n);
+    auto expected = data;
+    std::ranges::sort(expected);
 
-    std::println("input: {}", str(input));
+    auto& array = machine.allocate<int>(data);
 
-    machine.parallel(BionicSortImpl{.input = input, .output = output});
+    std::println("input: {}", str(array));
 
-    std::println("output: {}", str(output));
-    std::ranges::sort(data);
-    pram::assert_or_throw(output.data == data, "Sorted output does not match expected values.");
+    machine.parallel(BionicSortImpl{.array = array});
+
+    std::println("output: {}", str(array));
+    std::println("expected: {}", str(expected));
+    pram::assert_or_throw(array.data == expected, "The result does not match expected values.");
     std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", machine.n_processors, machine.round_count(),
         machine.read_count(), machine.write_count());
 }

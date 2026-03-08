@@ -38,6 +38,9 @@ void rank_sort() {
     std::mt19937 gen{std::random_device{}()};
     auto data = std::views::iota(1, static_cast<int>(n + 1)) | std::ranges::to<std::vector>();
     std::ranges::shuffle(data, gen);
+    auto expected = data;
+    std::ranges::sort(expected);
+
     auto& array = machine.allocate<int>(data);
     auto& rank = machine.allocate<size_t>(n);
 
@@ -46,8 +49,8 @@ void rank_sort() {
     machine.parallel(RankSortImpl{.array = array, .rank = rank});
 
     std::println("output: {}", str(array));
-    std::ranges::sort(data);
-    pram::assert_or_throw(array.data == data, "Sorted output does not match expected values.");
+    std::println("expected: {}", str(expected));
+    pram::assert_or_throw(array.data == expected, "The result does not match expected values.");
     std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", machine.n_processors, machine.round_count(),
         machine.read_count(), machine.write_count());
 }

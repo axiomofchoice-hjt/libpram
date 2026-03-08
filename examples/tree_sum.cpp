@@ -10,30 +10,26 @@
  * 树形求和，CREW 模型，处理器数 O(n)，时间复杂度 O(logn)
  */
 struct TreeSumImpl {
-    pram::SharedArray<int>& input;
-    pram::SharedArray<int>& buffer;
-    pram::SharedArray<int>& output;
+    pram::SharedArray<int>& array;
+    pram::SharedArray<int>& result;
 
     pram::Task operator()(size_t pid) {
-        size_t n = input.size();
-
-        buffer.write(pid, input[pid]);
-        co_await pram::barrier();
+        size_t n = array.size();
 
         for (size_t stride = 1; stride < n; stride *= 2) {
             int value = 0;
             if (pid % (2 * stride) == 0 && pid + stride < n) {
-                value = buffer[pid] + buffer[pid + stride];
+                value = array[pid] + array[pid + stride];
             }
             co_await pram::barrier();
             if (pid % (2 * stride) == 0 && pid + stride < n) {
-                buffer.write(pid, value);
+                array.write(pid, value);
             }
             co_await pram::barrier();
         }
 
         if (pid == 0) {
-            output.write(0, buffer[0]);
+            result.write(0, array[0]);
         }
     }
 };
@@ -48,17 +44,18 @@ void tree_sum() {
     std::vector<int> data;
     std::ranges::for_each(std::views::iota(0zU, n), [&](int) { data.push_back(dis(gen)); });
     std::ranges::shuffle(data, gen);
-    auto& input = machine.allocate<int>(data);
-    auto& output = machine.allocate<int>(1);
-    auto& buffer = machine.allocate<int>(n);
+    int expected = std::ranges::fold_left(data, 0, std::plus{});
 
-    std::println("input: {}", str(input));
+    auto& array = machine.allocate<int>(data);
+    auto& result = machine.allocate<int>(1);
 
-    machine.parallel(TreeSumImpl{.input = input, .buffer = buffer, .output = output});
+    std::println("input: {}", str(array));
 
-    std::println("output: {}", str(output));
-    int expected = std::ranges::fold_left(input.data, 0, std::plus{});
-    pram::assert_or_throw(output.data[0] == expected, "Reduce does not match expected value.");
+    machine.parallel(TreeSumImpl{.array = array, .result = result});
+
+    std::println("output: {}", str(result));
+    std::println("expected: {}", expected);
+    pram::assert_or_throw(result.data[0] == expected, "The result does not match expected values.");
     std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", machine.n_processors, machine.round_count(),
         machine.read_count(), machine.write_count());
 }

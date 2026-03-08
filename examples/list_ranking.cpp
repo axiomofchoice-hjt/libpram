@@ -50,7 +50,12 @@ void list_ranking() {
     std::vector<int> data(n, -1);
     auto perm = std::views::iota(0, static_cast<int>(n)) | std::ranges::to<std::vector>();
     std::ranges::shuffle(perm, gen);
-    std::ranges::for_each(std::views::iota(0zU, n - 1), [&](size_t i) { data[perm[i]] = perm[i + 1]; });
+    std::vector<size_t> expected(n, 0zU);
+    std::ranges::for_each(std::views::iota(0zU, n - 1), [&](size_t i) {
+        data[perm[i]] = perm[i + 1];
+        expected[perm[i]] = n - 1 - i;
+    });
+
     auto& next = machine.allocate<int>(data);
     auto& dist = machine.allocate<size_t>(n);
 
@@ -59,6 +64,8 @@ void list_ranking() {
     machine.parallel(ListRankingImpl{.next = next, .dist = dist});
 
     std::println("dist: {}", str(dist));
+    std::println("expected: {}", str(expected));
+    pram::assert_or_throw(dist.data == expected, "The result does not match expected values.");
     std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", machine.n_processors, machine.round_count(),
         machine.read_count(), machine.write_count());
 }
