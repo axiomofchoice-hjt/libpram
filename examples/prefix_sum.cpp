@@ -9,12 +9,11 @@
 /**
  * 前缀和，CREW 模型，处理器数 O(n)，时间复杂度 O(logn)
  */
-struct PrefixSumImpl {
-    pram::SharedArray<int>& array;
-
-    pram::Task operator()(size_t pid) {
-        size_t n = array.size();
-
+std::pair<std::vector<int>, pram::Stat> prefix_sum_impl(const std::vector<int>& data) {
+    size_t n = data.size();
+    pram::Machine machine{n, pram::CREW};
+    auto& array = machine.allocate<int>(data);
+    machine.parallel([&](size_t pid) -> pram::Task {
         for (size_t stride = 1; stride < n; stride *= 2) {
             int temp = 0;
             if (pid >= stride) {
@@ -26,13 +25,12 @@ struct PrefixSumImpl {
             }
             co_await pram::barrier();
         }
-    }
-};
+    });
+    return {array.data, machine.stat()};
+}
 
 void list_ranking() {
     constexpr size_t n = 8;
-
-    pram::Machine machine{n, pram::CREW};
 
     std::mt19937 gen{std::random_device{}()};
     std::uniform_int_distribution<> dis(1, 4);
@@ -42,16 +40,15 @@ void list_ranking() {
     std::vector<int> expected;
     std::partial_sum(data.begin(), data.end(), std::back_inserter(expected));
 
-    auto& array = machine.allocate<int>(data);
+    std::println("input: {}", str(data));
 
-    std::println("input: {}", str(array));
+    auto [result, stat] = prefix_sum_impl(data);
 
-    machine.parallel(PrefixSumImpl{.array = array});
-    std::println("output: {}", str(array));
+    std::println("result: {}", str(result));
     std::println("expected: {}", str(expected));
-    pram::assert_or_throw(array.data == expected, "The result does not match expected values.");
-    std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", machine.n_processors, machine.round_count(),
-        machine.read_count(), machine.write_count());
+    pram::assert_or_throw(result == expected, "The result does not match expected values.");
+    std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", stat.n_processors, stat.n_rounds, stat.n_reads,
+        stat.n_writes);
 }
 
 int main() try {

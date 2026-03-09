@@ -51,6 +51,13 @@ struct BarrierAwaitable {
     void await_resume() noexcept {}
 };
 
+struct Stat {
+    size_t n_processors;
+    size_t n_rounds;
+    size_t n_reads;
+    size_t n_writes;
+};
+
 struct Machine {
     size_t n_processors;
     Model model;
@@ -97,17 +104,13 @@ struct Machine {
         }
     }
 
-    size_t read_count() const {
-        return std::ranges::fold_left(
+    Stat stat() const {
+        size_t n_reads = std::ranges::fold_left(
             memories, 0ULL, [](size_t acc, const std::unique_ptr<Memory>& mem) { return acc + mem->read_count(); });
-    }
-
-    size_t write_count() const {
-        return std::ranges::fold_left(
+        size_t n_writes = std::ranges::fold_left(
             memories, 0ULL, [](size_t acc, const std::unique_ptr<Memory>& mem) { return acc + mem->write_count(); });
+        return {.n_processors = n_processors, .n_rounds = round_counter, .n_reads = n_reads, .n_writes = n_writes};
     }
-
-    size_t round_count() const { return round_counter; }
 };
 
 BarrierAwaitable barrier() { return BarrierAwaitable{}; }

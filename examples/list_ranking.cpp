@@ -9,11 +9,14 @@
 /**
  * List Ranking，CREW 模型，处理器数 O(n)，时间复杂度 O(logn)
  */
-struct ListRankingImpl {
-    pram::SharedArray<int>& next;
-    pram::SharedArray<size_t>& dist;
+std::pair<std::vector<size_t>, pram::Stat> list_ranking_impl(const std::vector<int>& data) {
+    size_t n = data.size();
+    pram::Machine machine{n, pram::CREW};
 
-    pram::Task operator()(size_t pid) {
+    auto& next = machine.allocate<int>(data);
+    auto& dist = machine.allocate<size_t>(n);
+
+    machine.parallel([&](size_t pid) -> pram::Task {
         size_t n = next.size();
 
         int next_id = next[pid];
@@ -38,13 +41,13 @@ struct ListRankingImpl {
             }
             co_await pram::barrier();
         }
-    }
-};
+    });
+
+    return {dist.data, machine.stat()};
+}
 
 void list_ranking() {
     constexpr size_t n = 8;
-
-    pram::Machine machine{n, pram::CREW};
 
     std::mt19937 gen{std::random_device{}()};
     std::vector<int> data(n, -1);
@@ -56,18 +59,15 @@ void list_ranking() {
         expected[perm[i]] = n - 1 - i;
     });
 
-    auto& next = machine.allocate<int>(data);
-    auto& dist = machine.allocate<size_t>(n);
+    std::println("next: {}", str(data));
 
-    std::println("next: {}", str(next));
+    auto [result, stat] = list_ranking_impl(data);
 
-    machine.parallel(ListRankingImpl{.next = next, .dist = dist});
-
-    std::println("dist: {}", str(dist));
+    std::println("result: {}", str(result));
     std::println("expected: {}", str(expected));
-    pram::assert_or_throw(dist.data == expected, "The result does not match expected values.");
-    std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", machine.n_processors, machine.round_count(),
-        machine.read_count(), machine.write_count());
+    pram::assert_or_throw(result == expected, "The result does not match expected values.");
+    std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", stat.n_processors, stat.n_rounds, stat.n_reads,
+        stat.n_writes);
 }
 
 int main() try {
