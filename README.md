@@ -55,7 +55,3 @@ std::pair<std::vector<int>, pram::Stat> rank_sort_impl(const std::vector<int>& d
     return {array.data, machine.stat()};
 }
 ```
-
-## 4. 未实现的特性
-
-- priority CRCW。
