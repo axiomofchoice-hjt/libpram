@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base/assert.hpp"
+#include "context.hpp"
 #include "model.hpp"
 
 namespace pram {
@@ -16,12 +17,14 @@ namespace impl {
 template <typename T>
 struct ReadRequest {
     T* internal_ref;
+    size_t pid;
 };
 
 template <typename T>
 struct WriteRequest {
     T* internal_ref;
     T value;
+    size_t pid;
 };
 }  // namespace impl
 
@@ -84,6 +87,18 @@ void apply_arbitrary_write(const std::vector<WriteRequest<T>>& write_requests) {
 }
 
 template <typename T>
+void apply_priority_write(const std::vector<WriteRequest<T>>& write_requests) {
+    for (size_t i = 0; i < write_requests.size();) {
+        size_t j = i + 1;
+        while (j < write_requests.size() && write_requests[i].internal_ref == write_requests[j].internal_ref) {
+            j++;
+        }
+        *write_requests[i].internal_ref = write_requests[i].value;
+        i = j;
+    }
+}
+
+template <typename T>
 void apply_combining_write(const std::vector<WriteRequest<T>>& write_requests, const auto& combine_function) {
     for (size_t i : std::views::iota(0zU, write_requests.size())) {
         if (i == 0 || write_requests[i].internal_ref != write_requests[i - 1].internal_ref) {
@@ -100,27 +115,32 @@ template <typename T>
 struct SharedArray : Memory {
     std::vector<T> data;
     Model model;
+    const Context* context;
 
     std::vector<impl::ReadRequest<T>> read_requests;
     std::vector<impl::WriteRequest<T>> write_requests;
 
-    size_t read_counter;
-    size_t write_counter;
+    size_t read_counter = 0;
+    size_t write_counter = 0;
 
-    SharedArray(size_t length, Model model)
-        : data(std::vector<T>(length)), model(model), read_counter(0), write_counter(0) {}
+    SharedArray(size_t length, Model model, const Context* context)
+        : data(std::vector<T>(length)), model(model), context(context) {}
 
-    SharedArray(std::vector<T> data, Model model)
-        : data(std::move(data)), model(model), read_counter(0), write_counter(0) {}
+    SharedArray(std::vector<T> data, Model model, const Context* context)
+        : data(std::move(data)), model(model), context(context) {}
 
     size_t size() const { return data.size(); }
 
     T operator[](size_t index) {
-        read_requests.push_back({&data[index]});
+        assert_or_throw(context->current_pid.has_value(), "Read outside parallel region");
+        read_requests.push_back({.internal_ref = &data[index], .pid = *context->current_pid});
         return data[index];
     }
 
-    void write(size_t index, T value) { write_requests.push_back({&data[index], value}); }
+    void write(size_t index, T value) {
+        assert_or_throw(context->current_pid.has_value(), "Write outside parallel region");
+        write_requests.push_back({.internal_ref = &data[index], .value = value, .pid = *context->current_pid});
+    }
 
     void commit() override {
         // std::println("commit");
@@ -128,7 +148,7 @@ struct SharedArray : Memory {
             return a.internal_ref < b.internal_ref;
         });
         std::ranges::sort(write_requests, [](const impl::WriteRequest<T>& a, const impl::WriteRequest<T>& b) {
-            return a.internal_ref < b.internal_ref;
+            return std::pair{a.internal_ref, a.pid} < std::pair{b.internal_ref, b.pid};
         });
 
         {
@@ -162,6 +182,9 @@ struct SharedArray : Memory {
                 break;
             case impl::WritePolicy::Arbitrary:  // 处理任意写
                 impl::apply_arbitrary_write(write_requests);
+                break;
+            case impl::WritePolicy::Priority:  // 处理优先级写
+                impl::apply_priority_write(write_requests);
                 break;
             case impl::WritePolicy::Add:  // 处理合并写 加法
                 impl::apply_combining_write(write_requests, std::plus<T>{});

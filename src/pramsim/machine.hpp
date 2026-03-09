@@ -59,25 +59,25 @@ struct Stat {
 };
 
 struct Machine {
-    size_t n_processors;
     Model model;
     std::vector<std::unique_ptr<Memory>> memories;
+    std::unique_ptr<Context> context;
 
-    size_t round_counter;
+    size_t round_counter = 0;
 
-    Machine(size_t n_processors) : n_processors(n_processors), model{CREW}, round_counter(0) {}
-    Machine(size_t n_processors, Model model) : n_processors(n_processors), model(model), round_counter(0) {}
+    Machine(size_t n_processors) : model{CREW}, context{std::make_unique<Context>(n_processors)} {}
+    Machine(size_t n_processors, Model model) : model(model), context{std::make_unique<Context>(n_processors)} {}
 
     template <typename T>
     SharedArray<T>& allocate(this auto&& self, size_t length) {
-        auto array = std::make_unique<SharedArray<T>>(length, self.model);
+        auto array = std::make_unique<SharedArray<T>>(length, self.model, self.context.get());
         self.memories.push_back(std::move(array));
         return *static_cast<SharedArray<T>*>(self.memories.back().get());
     }
 
     template <typename T>
     SharedArray<T>& allocate(this auto&& self, std::vector<T> data) {
-        auto array = std::make_unique<SharedArray<T>>(std::move(data), self.model);
+        auto array = std::make_unique<SharedArray<T>>(std::move(data), self.model, self.context.get());
         self.memories.push_back(std::move(array));
         return *static_cast<SharedArray<T>*>(self.memories.back().get());
     }
@@ -85,17 +85,19 @@ struct Machine {
     template <std::invocable<size_t> F>
     void parallel(this auto&& self, F&& func) {
         bool active = true;
-        auto tasks =
-            std::views::iota(0zU, self.n_processors) | std::views::transform(func) | std::ranges::to<std::vector>();
+        auto tasks = std::views::iota(0zU, self.context->n_processors) | std::views::transform(func) |
+                     std::ranges::to<std::vector>();
 
         while (active) {
             active = false;
-            for (auto& t : tasks) {
+            for (auto&& [pid, t] : tasks | std::views::enumerate) {
                 if (!t.handle.done()) {
                     active = true;
+                    self.context->current_pid = pid;
                     t.handle.resume();
                 }
             }
+            self.context->current_pid = std::nullopt;
             if (active) {
                 for (auto& mem : self.memories) {
                     mem->commit();
@@ -110,7 +112,8 @@ struct Machine {
             memories, 0ULL, [](size_t acc, const std::unique_ptr<Memory>& mem) { return acc + mem->read_count(); });
         size_t n_writes = std::ranges::fold_left(
             memories, 0ULL, [](size_t acc, const std::unique_ptr<Memory>& mem) { return acc + mem->write_count(); });
-        return {.n_processors = n_processors, .n_rounds = round_counter, .n_reads = n_reads, .n_writes = n_writes};
+        return {
+            .n_processors = context->n_processors, .n_rounds = round_counter, .n_reads = n_reads, .n_writes = n_writes};
     }
 };
 
