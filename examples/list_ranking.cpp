@@ -45,7 +45,7 @@ std::pair<std::vector<size_t>, pram::Stat> list_ranking_impl(const std::vector<i
     return {dist.data, machine.stat()};
 }
 
-void list_ranking() {
+void list_ranking_example() {
     constexpr size_t n = 8;
 
     std::mt19937 gen{std::random_device{}()};
@@ -71,7 +71,7 @@ void list_ranking() {
 
 int main() try {
     std::println("===== example: list_ranking =====");
-    list_ranking();
+    list_ranking_example();
 } catch (const pram::assertion_error& e) {
     std::println("Assertion error: {}", e.what());
     return 1;

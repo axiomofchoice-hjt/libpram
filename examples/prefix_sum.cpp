@@ -28,7 +28,7 @@ std::pair<std::vector<int>, pram::Stat> prefix_sum_impl(const std::vector<int>& 
     return {array.data, machine.stat()};
 }
 
-void list_ranking() {
+void prefix_sum_example() {
     constexpr size_t n = 8;
 
     std::mt19937 gen{std::random_device{}()};
@@ -52,7 +52,7 @@ void list_ranking() {
 
 int main() try {
     std::println("===== example: prefix_sum =====");
-    list_ranking();
+    prefix_sum_example();
 } catch (const pram::assertion_error& e) {
     std::println("Assertion error: {}", e.what());
     return 1;

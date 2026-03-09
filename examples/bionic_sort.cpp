@@ -56,7 +56,7 @@ std::pair<std::vector<int>, pram::Stat> bionic_sort_impl(const std::vector<int>&
     return {array.data, machine.stat()};
 }
 
-void bionic_sort() {
+void bionic_sort_example() {
     constexpr size_t n = 12;
 
     std::mt19937 gen{std::random_device{}()};
@@ -78,7 +78,7 @@ void bionic_sort() {
 
 int main() try {
     std::println("===== example: bionic_sort =====");
-    bionic_sort();
+    bionic_sort_example();
 } catch (const pram::assertion_error& e) {
     std::println("Assertion error: {}", e.what());
     return 1;

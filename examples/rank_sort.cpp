@@ -33,7 +33,7 @@ std::pair<std::vector<int>, pram::Stat> rank_sort_impl(const std::vector<int>& d
     return {array.data, machine.stat()};
 }
 
-void rank_sort() {
+void rank_sort_example() {
     constexpr size_t n = 8;
 
     std::mt19937 gen{std::random_device{}()};
@@ -55,7 +55,7 @@ void rank_sort() {
 
 int main() try {
     std::println("===== example: rank_sort =====");
-    rank_sort();
+    rank_sort_example();
 } catch (const pram::assertion_error& e) {
     std::println("Assertion error: {}", e.what());
     return 1;
