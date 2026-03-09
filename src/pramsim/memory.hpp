@@ -6,8 +6,8 @@
 #include <utility>
 #include <vector>
 
-#include "base/assert.h"
-#include "model.h"
+#include "base/assert.hpp"
+#include "model.hpp"
 
 namespace pram {
 namespace impl {

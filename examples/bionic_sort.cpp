@@ -1,10 +1,9 @@
-#include <pramsim/pramsim.h>
-
+#include <pramsim/pramsim.hpp>
 #include <print>
 #include <random>
 #include <ranges>
 
-#include "str.h"
+#include "str.hpp"
 
 /**
  * 双调排序变种，CREW 模型，处理器数 O(n)，时间复杂度 O(log^2{n})

@@ -7,7 +7,7 @@
 #include <ranges>
 #include <vector>
 
-#include "memory.h"
+#include "memory.hpp"
 
 namespace pram {
 struct Task {
