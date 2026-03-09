@@ -4,65 +4,63 @@
 #include <random>
 #include <ranges>
 
-#include "format.h"  // IWYU pragma: keep
+#include "str.h"
 
-struct TreeSumImpl {
-    pram::SharedArray<int>& input;
-    pram::SharedArray<int>& buffer;
-    pram::SharedArray<int>& output;
+/**
+ * 树形求和，CREW 模型，处理器数 O(n)，时间复杂度 O(logn)
+ */
+std::pair<int, pram::Stat> tree_sum_impl(const std::vector<int>& data) {
+    size_t n = data.size();
+    pram::Machine machine{n, pram::CREW};
 
-    pram::Task operator()(size_t pid) {
-        size_t n = input.size();
+    auto& array = machine.allocate<int>(data);
+    auto& result = machine.allocate<int>(1);
 
-        buffer.write(pid, input[pid]);
-        co_await pram::barrier();
-
+    machine.parallel([&](size_t pid) -> pram::Task {
         for (size_t stride = 1; stride < n; stride *= 2) {
             int value = 0;
             if (pid % (2 * stride) == 0 && pid + stride < n) {
-                value = buffer[pid] + buffer[pid + stride];
+                value = array[pid] + array[pid + stride];
             }
             co_await pram::barrier();
             if (pid % (2 * stride) == 0 && pid + stride < n) {
-                buffer.write(pid, value);
+                array.write(pid, value);
             }
             co_await pram::barrier();
         }
 
         if (pid == 0) {
-            output.write(0, buffer[0]);
+            result.write(0, array[0]);
         }
-    }
-};
+    });
 
-void tree_sum() {
+    return {result.data[0], machine.stat()};
+}
+
+void tree_sum_example() {
     constexpr size_t n = 8;
-
-    pram::Machine machine{n, pram::EREW};
 
     std::mt19937 gen{std::random_device{}()};
     std::uniform_int_distribution<> dis(1, 4);
     std::vector<int> data;
     std::ranges::for_each(std::views::iota(0zU, n), [&](int) { data.push_back(dis(gen)); });
     std::ranges::shuffle(data, gen);
-    auto& input = machine.allocate<int>(data);
-    auto& output = machine.allocate<int>(1);
-    auto& buffer = machine.allocate<int>(n);
+    int expected = std::ranges::fold_left(data, 0, std::plus{});
 
-    std::println("input: {}", input);
+    std::println("input: {}", str(data));
 
-    machine.parallel(TreeSumImpl{.input = input, .buffer = buffer, .output = output});
+    auto [result, stat] = tree_sum_impl(data);
 
-    std::println("output: {}", output);
-    int expected = std::ranges::fold_left(input.data, 0, std::plus{});
-    pram::assert_or_throw(output.data[0] == expected, "Reduce does not match expected value.");
-    std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", machine.n_processors, machine.round_count(),
-        machine.read_count(), machine.write_count());
+    std::println("result: {}", result);
+    std::println("expected: {}", expected);
+    pram::assert_or_throw(result == expected, "The result does not match expected values.");
+    std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", stat.n_processors, stat.n_rounds, stat.n_reads,
+        stat.n_writes);
 }
 
 int main() try {
     std::println("===== example: tree_sum =====");
-    tree_sum();
+    tree_sum_example();
 } catch (const pram::assertion_error& e) {
     std::println("Assertion error: {}", e.what());
     return 1;

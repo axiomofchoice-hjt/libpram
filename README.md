@@ -30,27 +30,30 @@ g++ examples/rank_sort.cpp -I src -std=c++23
 完整示例见 [examples/rank_sort.cpp](examples/rank_sort.cpp)。
 
 ```cpp
-struct RankSortImpl {
-    pram::SharedArray<int>& input;
-    pram::SharedArray<size_t>& rank;
-    pram::SharedArray<int>& output;
+std::pair<std::vector<int>, pram::Stat> rank_sort_impl(const std::vector<int>& data) {
+    size_t n = data.size();
+    pram::Machine machine{n * n, pram::CRCW_Add};
 
-    pram::Task operator()(size_t pid) {
-        size_t n = input.size();
+    auto& array = machine.allocate<int>(data);
+    auto& rank = machine.allocate<size_t>(n);
+
+    machine.parallel([&](size_t pid) -> pram::Task {
         size_t i = pid / n;
         size_t j = pid % n;
 
-        int value_i = input[i];
-        int value_j = input[j];
+        int value_i = array[i];
+        int value_j = array[j];
         if (std::pair{value_i, i} > std::pair{value_j, j}) {
             rank.write(i, 1);
         }
         co_await pram::barrier();
         if (j == 0) {
-            output.write(rank[i], value_i);
+            array.write(rank[i], value_i);
         }
-    }
-};
+    });
+
+    return {array.data, machine.stat()};
+}
 ```
 
 ## 4. 未实现的特性

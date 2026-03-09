@@ -4,17 +4,29 @@
 #include <random>
 #include <ranges>
 
-#include "format.h"  // IWYU pragma: keep
+#include "str.h"
 
-struct BionicSortImpl {
-    pram::SharedArray<int>& input;
-    pram::SharedArray<int>& output;
+/**
+ * 双调排序变种，CREW 模型，处理器数 O(n)，时间复杂度 O(log^2{n})
+ * 这个变种可以优雅处理非 2 的幂次的输入规模。
+ * n = 8 的排序网络如下所示：
+ * 0: --#--------#----#--------#--------#----#----
+ * 1: --#--------|-#--#--------|-#------|-#--#----
+ * 2: ----#------|-#----#------|-|-#----#-|----#--
+ * 3: ----#------#------#------|-|-|-#----#----#--
+ * 4: --#--------#----#--------|-|-|-#--#----#----
+ * 5: --#--------|-#--#--------|-|-#----|-#--#----
+ * 6: ----#------|-#----#------|-#------#-|----#--
+ * 7: ----#------#------#------#----------#----#--
+ */
+std::pair<std::vector<int>, pram::Stat> bionic_sort_impl(const std::vector<int>& data) {
+    size_t n = data.size();
+    pram::Machine machine{n, pram::CREW};
 
-    /// 双调排序变种，可以优雅地解决非 2 的幂次规模
-    pram::Task operator()(size_t pid) {
-        size_t n = input.size();
-        output.write(pid, input[pid]);
-        co_await pram::barrier();
+    auto& array = machine.allocate<int>(data);
+
+    machine.parallel([&](size_t pid) -> pram::Task {
+        size_t n = array.size();
 
         for (size_t k = 2; k <= std::bit_ceil(n); k *= 2) {
             for (size_t i = k / 2; i > 0; i /= 2) {
@@ -26,45 +38,43 @@ struct BionicSortImpl {
                 int val_self = 0;
                 int val_partner = 0;
                 if (pid < partner && partner < n) {
-                    val_self = output[pid];
-                    val_partner = output[partner];
+                    val_self = array[pid];
+                    val_partner = array[partner];
                 }
                 co_await pram::barrier();
 
                 if (pid < partner && partner < n) {
-                    bool should_swap = val_self > val_partner;
-
-                    if (should_swap) {
-                        output.write(pid, val_partner);
-                        output.write(partner, val_self);
+                    if (val_self > val_partner) {
+                        array.write(pid, val_partner);
+                        array.write(partner, val_self);
                     }
                 }
                 co_await pram::barrier();
             }
         }
-    }
-};
+    });
+
+    return {array.data, machine.stat()};
+}
 
 void bionic_sort() {
     constexpr size_t n = 12;
 
-    pram::Machine machine{n, pram::CREW};
-
     std::mt19937 gen{std::random_device{}()};
     auto data = std::views::iota(1, static_cast<int>(n + 1)) | std::ranges::to<std::vector>();
     std::ranges::shuffle(data, gen);
-    auto& input = machine.allocate<int>(data);
-    auto& output = machine.allocate<int>(n);
+    auto expected = data;
+    std::ranges::sort(expected);
 
-    std::println("input: {}", input);
+    std::println("input: {}", str(data));
 
-    machine.parallel(BionicSortImpl{.input = input, .output = output});
+    auto [result, stat] = bionic_sort_impl(data);
 
-    std::println("output: {}", output);
-    std::ranges::sort(data);
-    pram::assert_or_throw(output.data == data, "Sorted output does not match expected values.");
-    std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", machine.n_processors, machine.round_count(),
-        machine.read_count(), machine.write_count());
+    std::println("output: {}", str(result));
+    std::println("expected: {}", str(expected));
+    pram::assert_or_throw(result == expected, "The result does not match expected values.");
+    std::println("n_processors: {}, rounds: {}, reads: {}, writes: {}", stat.n_processors, stat.n_rounds, stat.n_reads,
+        stat.n_writes);
 }
 
 int main() try {
