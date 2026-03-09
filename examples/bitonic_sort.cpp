@@ -18,7 +18,7 @@
  * 6: ----#------|-#----#------|-#------#-|----#--
  * 7: ----#------#------#------#----------#----#--
  */
-std::pair<std::vector<int>, pram::Stat> bionic_sort_impl(const std::vector<int>& data) {
+std::pair<std::vector<int>, pram::Stat> bitonic_sort_impl(const std::vector<int>& data) {
     size_t n = data.size();
     pram::Machine machine{n, pram::CREW};
 
@@ -56,7 +56,7 @@ std::pair<std::vector<int>, pram::Stat> bionic_sort_impl(const std::vector<int>&
     return {array.data, machine.stat()};
 }
 
-void bionic_sort_example() {
+void bitonic_sort_example() {
     constexpr size_t n = 12;
 
     std::mt19937 gen{std::random_device{}()};
@@ -67,7 +67,7 @@ void bionic_sort_example() {
 
     std::println("input: {}", str(data));
 
-    auto [result, stat] = bionic_sort_impl(data);
+    auto [result, stat] = bitonic_sort_impl(data);
 
     std::println("output: {}", str(result));
     std::println("expected: {}", str(expected));
@@ -78,7 +78,7 @@ void bionic_sort_example() {
 
 int main() try {
     std::println("===== example: bionic_sort =====");
-    bionic_sort_example();
+    bitonic_sort_example();
 } catch (const pram::assertion_error& e) {
     std::println("Assertion error: {}", e.what());
     return 1;
