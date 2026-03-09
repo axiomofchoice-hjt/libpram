@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cstddef>
 #include <functional>
+#include <random>
+#include <ranges>
 #include <utility>
 #include <vector>
 
@@ -66,9 +68,24 @@ void apply_write(const std::vector<WriteRequest<T>>& write_requests) {
     }
 }
 
+inline std::mt19937 gen{std::random_device{}()};
+
+template <typename T>
+void apply_arbitrary_write(const std::vector<WriteRequest<T>>& write_requests) {
+    for (size_t i = 0; i < write_requests.size();) {
+        size_t j = i + 1;
+        while (j < write_requests.size() && write_requests[i].internal_ref == write_requests[j].internal_ref) {
+            j++;
+        }
+        std::uniform_int_distribution<size_t> uniform(i, j - 1);
+        *write_requests[i].internal_ref = write_requests[uniform(gen)].value;
+        i = j;
+    }
+}
+
 template <typename T>
 void apply_combining_write(const std::vector<WriteRequest<T>>& write_requests, const auto& combine_function) {
-    for (size_t i = 0; i < write_requests.size(); i++) {
+    for (size_t i : std::views::iota(0zU, write_requests.size())) {
         if (i == 0 || write_requests[i].internal_ref != write_requests[i - 1].internal_ref) {
             *write_requests[i].internal_ref = write_requests[i].value;
         } else {
@@ -144,7 +161,7 @@ struct SharedArray : Memory {
                 impl::apply_write(write_requests);
                 break;
             case impl::WritePolicy::Arbitrary:  // 处理任意写
-                impl::apply_write(write_requests);
+                impl::apply_arbitrary_write(write_requests);
                 break;
             case impl::WritePolicy::Add:  // 处理合并写 加法
                 impl::apply_combining_write(write_requests, std::plus<T>{});

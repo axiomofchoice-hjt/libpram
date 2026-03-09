@@ -58,5 +58,4 @@ std::pair<std::vector<int>, pram::Stat> rank_sort_impl(const std::vector<int>& d
 
 ## 4. 未实现的特性
 
-- 随机的 arbitrary CRCW。
 - priority CRCW。
