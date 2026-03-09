@@ -82,7 +82,8 @@ struct Machine {
         return *static_cast<SharedArray<T>*>(self.memories.back().get());
     }
 
-    void parallel(this auto&& self, auto&& func) {
+    template <std::invocable<size_t> F>
+    void parallel(this auto&& self, F&& func) {
         bool active = true;
         auto tasks =
             std::views::iota(0zU, self.n_processors) | std::views::transform(func) | std::ranges::to<std::vector>();
