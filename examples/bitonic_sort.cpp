@@ -40,7 +40,7 @@ std::pair<std::vector<int>, pram::Stat> bitonic_sort_impl(const std::vector<int>
                     val_self = array[pid];
                     val_partner = array[partner];
                 }
-                co_await pram::barrier();
+                co_await pram::step();
 
                 if (pid < partner && partner < n) {
                     if (val_self > val_partner) {
@@ -48,7 +48,7 @@ std::pair<std::vector<int>, pram::Stat> bitonic_sort_impl(const std::vector<int>
                         array.write(partner, val_self);
                     }
                 }
-                co_await pram::barrier();
+                co_await pram::step();
             }
         }
     });

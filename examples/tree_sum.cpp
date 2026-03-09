@@ -21,11 +21,11 @@ std::pair<int, pram::Stat> tree_sum_impl(const std::vector<int>& data) {
             if (pid % (2 * stride) == 0 && pid + stride < n) {
                 value = array[pid] + array[pid + stride];
             }
-            co_await pram::barrier();
+            co_await pram::step();
             if (pid % (2 * stride) == 0 && pid + stride < n) {
                 array.write(pid, value);
             }
-            co_await pram::barrier();
+            co_await pram::step();
         }
 
         if (pid == 0) {

@@ -19,9 +19,9 @@ std::pair<std::vector<size_t>, pram::Stat> list_ranking_impl(const std::vector<i
         size_t n = next.size();
 
         int next_id = next[pid];
-        co_await pram::barrier();
+        co_await pram::step();
         dist.write(pid, next_id == -1 ? 0 : 1);
-        co_await pram::barrier();
+        co_await pram::step();
 
         for (size_t stride = 1; stride < n; stride *= 2) {
             int next_id = next[pid];
@@ -32,13 +32,13 @@ std::pair<std::vector<size_t>, pram::Stat> list_ranking_impl(const std::vector<i
                 next_next_id = next[next_id];
                 next_dist = dist[next_id];
             }
-            co_await pram::barrier();
+            co_await pram::step();
 
             if (next_id != -1) {
                 dist.write(pid, self_dist + next_dist);
                 next.write(pid, next_next_id);
             }
-            co_await pram::barrier();
+            co_await pram::step();
         }
     });
 

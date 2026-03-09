@@ -18,11 +18,11 @@ std::pair<std::vector<int>, pram::Stat> prefix_sum_impl(const std::vector<int>& 
             if (pid >= stride) {
                 temp = array[pid] + array[pid - stride];
             }
-            co_await pram::barrier();
+            co_await pram::step();
             if (pid >= stride) {
                 array.write(pid, temp);
             }
-            co_await pram::barrier();
+            co_await pram::step();
         }
     });
     return {array.data, machine.stat()};

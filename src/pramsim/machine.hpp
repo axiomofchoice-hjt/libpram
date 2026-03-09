@@ -45,7 +45,7 @@ struct Task {
     ~Task() { destroy(); }
 };
 
-struct BarrierAwaitable {
+struct StepAwaitable {
     bool await_ready([[maybe_unused]] this auto&& self) noexcept { return false; }
     void await_suspend([[maybe_unused]] std::coroutine_handle<> _) noexcept {}
     void await_resume() noexcept {}
@@ -117,5 +117,5 @@ struct Machine {
     }
 };
 
-BarrierAwaitable barrier() { return BarrierAwaitable{}; }
+StepAwaitable step() { return {}; }
 }  // namespace pram
