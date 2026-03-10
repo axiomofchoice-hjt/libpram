@@ -18,7 +18,7 @@ xmake
 ## 2. 命令行构建
 
 ```bash
-g++ examples/rank_sort.cpp -I src -std=c++23
+g++ examples/rank_sort.cpp -I include -std=c++23
 ```
 
 等待构建完成，执行命令 `./a.out` 就能运行 rank_sort。
