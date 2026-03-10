@@ -2,6 +2,7 @@ name: clang checks
 
 on:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   clang:
