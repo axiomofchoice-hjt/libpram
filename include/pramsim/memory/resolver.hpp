@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
 #include <random>
 #include <ranges>
 #include <vector>
@@ -10,14 +9,10 @@
 
 namespace pram {
 namespace impl {
-enum class WritePolicy : uint8_t {
-    Exclusive,  // 互斥写
-    Common,     // 公共写
-    Arbitrary,  // 任意写
-    Priority,   // 优先级写
-    Add,        // 合并写 加法
-    Max,        // 合并写 取最大值
-    Min,        // 合并写 取最小值
+template <typename T>
+struct ReadRequest {
+    T* internal_ref;
+    size_t pid;
 };
 
 template <typename T>
@@ -26,6 +21,15 @@ struct WriteRequest {
     T value;
     size_t pid;
 };
+
+template <typename T>
+void check_exclusive_read(const std::vector<ReadRequest<T>>& read_requests) {
+    for (size_t i = 0; i + 1 < read_requests.size(); i++) {
+        if (read_requests[i].internal_ref == read_requests[i + 1].internal_ref) {
+            assert_or_throw(false, "Read conflict: exclusive read to the same address");
+        }
+    }
+}
 
 template <typename T>
 void check_exclusive_write(const std::vector<WriteRequest<T>>& write_requests) {

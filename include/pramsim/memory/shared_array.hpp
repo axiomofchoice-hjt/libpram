@@ -7,9 +7,10 @@
 #include <vector>
 
 #include "memory.hpp"
-#include "model.hpp"
 #include "pramsim/base/assert.hpp"
-#include "pramsim/machine/context.hpp"
+#include "pramsim/model/model.hpp"
+#include "pramsim/runtime/context.hpp"
+#include "resolver.hpp"
 
 namespace pram {
 template <typename T>

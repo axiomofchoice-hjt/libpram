@@ -7,7 +7,6 @@
 #include <ranges>
 #include <vector>
 
-#include "pramsim/memory/model.hpp"
 #include "pramsim/memory/shared_array.hpp"
 
 namespace pram {
