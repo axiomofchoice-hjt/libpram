@@ -2,28 +2,65 @@
 
 pramsim 是一个 PRAM（Parallel Random Access Machine）模拟器，用于并行复杂度实验与模型验证。
 
-特性：现代 C++ / Header Only / 协程。
+## 1. 特性
 
-## 1. 使用 xmake 构建
+- C++23 / Header Only / 协程
+- 教学友好
 
-要求支持 C++23 的编译器（clang / gcc）。
+## 2. 快速开始
+
+### 2.1. 准备
+
+- 支持 C++23 的编译器 (gcc / clang)
+- （可选）xmake 构建工具
+
+### 2.2. 获取源码
+
+可以用 git clone 命令获取：
 
 ```bash
-xmake config -m release
+git clone https://github.com/axiomofchoice-hjt/pramsim.git
+```
+
+### 2.3. 使用 xmake 构建（推荐）
+
+进入项目目录，执行构建命令：
+
+```bash
 xmake
+
+# 或者指定构建模式
+# xmake config -m release && xmake
 ```
 
-等待构建完成，执行命令 `xmake run` 就能运行 examples 的程序。
-
-要安装 pramsim 库，执行命令 `xmake install pramsim` 或者指定安装路径 `xmake install --installdir=/path/to/install pramsim`。
-
-## 2. 命令行构建
+等待构建完成后，执行命令运行 `examples` 的所有程序：
 
 ```bash
-g++ examples/rank_sort.cpp -DPRAMSIM_STANDALONE -Iinclude -std=c++23
+xmake run
 ```
 
-等待构建完成，执行命令 `./a.out` 就能运行 rank_sort。
+要安装 pramsim 库，执行命令：
+
+```bash
+xmake install pramsim
+
+# 或者指定安装路径
+# xmake install --installdir=/path/to/install pramsim
+```
+
+### 2.4. 直接编译
+
+执行命令：
+
+```bash
+g++ examples/rank_sort.cpp -DPRAMSIM_STANDALONE -Iinclude -std=c++23 -o rank_sort
+```
+
+等待构建完成后，执行命令运行 `rank_sort`：
+
+```bash
+./rank_sort
+```
 
 ## 3. 示例
 
