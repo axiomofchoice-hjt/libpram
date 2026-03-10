@@ -6,7 +6,17 @@ add_rules("mode.debug", "mode.release")
 
 target("pramsim")
     set_kind("headeronly")
+
+    add_configfiles("include/pramsim/version.hpp.in", {
+        filename = "pramsim/version.hpp",
+        prefixdir = "generated/include"
+    })
+
+    add_includedirs("$(builddir)/generated/include", {public = true})
     add_includedirs("include", {public = true})
+
+    add_headerfiles("$(builddir)/generated/include/(pramsim/**.hpp)")
+    add_headerfiles("include/(pramsim/**.hpp)")
 
 for _, file in ipairs(os.files("examples/*.cpp")) do
     local name = path.basename(file)

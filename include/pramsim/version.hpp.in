@@ -1,0 +1,14 @@
+#pragma once
+
+#include <cstdint>
+#include <string_view>
+
+namespace pram {
+inline constexpr std::string_view version = "${VERSION}";
+
+inline constexpr std::uint32_t version_major = ${VERSION_MAJOR};
+inline constexpr std::uint32_t version_minor = ${VERSION_MINOR};
+inline constexpr std::uint32_t version_patch = ${VERSION_ALTER};
+
+inline constexpr std::uint32_t version_number = (version_major * 10000) + (version_minor * 100) + version_patch;
+}  // namespace pram
