@@ -8,8 +8,8 @@
 
 #include "memory.hpp"
 #include "pramsim/base/assert.hpp"
-#include "pramsim/model/model.hpp"
-#include "pramsim/runtime/context.hpp"
+#include "pramsim/machine/context.hpp"
+#include "pramsim/machine/model.hpp"
 #include "resolver.hpp"
 
 namespace pram {
