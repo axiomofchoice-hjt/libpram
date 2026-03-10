@@ -6,7 +6,7 @@ add_rules("mode.debug", "mode.release")
 
 target("pramsim")
     set_kind("headeronly")
-    add_includedirs("src", {public = true})
+    add_includedirs("include", {public = true})
 
 for _, file in ipairs(os.files("examples/*.cpp")) do
     local name = path.basename(file)

@@ -7,7 +7,8 @@
 #include <ranges>
 #include <vector>
 
-#include "memory.hpp"
+#include "pramsim/memory/model.hpp"
+#include "pramsim/memory/shared_array.hpp"
 
 namespace pram {
 struct Task {
@@ -59,33 +60,33 @@ struct Stat {
 };
 
 struct Machine {
-    Model model;
-    std::vector<std::unique_ptr<Memory>> memories;
-    std::unique_ptr<Context> context;
+    Model _model;
+    std::vector<std::unique_ptr<Memory>> _memories;
+    std::unique_ptr<Context> _context;
 
-    size_t round_counter = 0;
+    size_t _n_rounds = 0;
 
-    Machine(size_t n_processors) : model{CREW}, context{std::make_unique<Context>(n_processors)} {}
-    Machine(size_t n_processors, Model model) : model(model), context{std::make_unique<Context>(n_processors)} {}
+    Machine(size_t n_processors) : _model{CREW}, _context{std::make_unique<Context>(n_processors)} {}
+    Machine(size_t n_processors, Model model) : _model(model), _context{std::make_unique<Context>(n_processors)} {}
 
     template <typename T>
     SharedArray<T>& allocate(this auto&& self, size_t length) {
-        auto array = std::make_unique<SharedArray<T>>(length, self.model, self.context.get());
-        self.memories.push_back(std::move(array));
-        return *static_cast<SharedArray<T>*>(self.memories.back().get());
+        auto array = std::make_unique<SharedArray<T>>(length, self._model, self._context.get());
+        self._memories.push_back(std::move(array));
+        return *static_cast<SharedArray<T>*>(self._memories.back().get());
     }
 
     template <typename T>
     SharedArray<T>& allocate(this auto&& self, std::vector<T> data) {
-        auto array = std::make_unique<SharedArray<T>>(std::move(data), self.model, self.context.get());
-        self.memories.push_back(std::move(array));
-        return *static_cast<SharedArray<T>*>(self.memories.back().get());
+        auto array = std::make_unique<SharedArray<T>>(std::move(data), self._model, self._context.get());
+        self._memories.push_back(std::move(array));
+        return *static_cast<SharedArray<T>*>(self._memories.back().get());
     }
 
     template <std::invocable<size_t> F>
     void parallel(this auto&& self, F&& func) {
         bool active = true;
-        auto tasks = std::views::iota(0zU, self.context->n_processors) | std::views::transform(func) |
+        auto tasks = std::views::iota(0zU, self._context->n_processors) | std::views::transform(func) |
                      std::ranges::to<std::vector>();
 
         while (active) {
@@ -93,27 +94,27 @@ struct Machine {
             for (auto&& [pid, t] : tasks | std::views::enumerate) {
                 if (!t.handle.done()) {
                     active = true;
-                    self.context->current_pid = pid;
+                    self._context->current_pid = pid;
                     t.handle.resume();
                 }
             }
-            self.context->current_pid = std::nullopt;
+            self._context->current_pid = std::nullopt;
             if (active) {
-                for (auto& mem : self.memories) {
+                for (auto& mem : self._memories) {
                     mem->commit();
                 }
-                self.round_counter++;
+                self._n_rounds++;
             }
         }
     }
 
     Stat stat() const {
         size_t n_reads = std::ranges::fold_left(
-            memories, 0ULL, [](size_t acc, const std::unique_ptr<Memory>& mem) { return acc + mem->read_count(); });
+            _memories, 0ULL, [](size_t acc, const std::unique_ptr<Memory>& mem) { return acc + mem->n_reads(); });
         size_t n_writes = std::ranges::fold_left(
-            memories, 0ULL, [](size_t acc, const std::unique_ptr<Memory>& mem) { return acc + mem->write_count(); });
+            _memories, 0ULL, [](size_t acc, const std::unique_ptr<Memory>& mem) { return acc + mem->n_writes(); });
         return {
-            .n_processors = context->n_processors, .n_rounds = round_counter, .n_reads = n_reads, .n_writes = n_writes};
+            .n_processors = _context->n_processors, .n_rounds = _n_rounds, .n_reads = n_reads, .n_writes = n_writes};
     }
 };
 

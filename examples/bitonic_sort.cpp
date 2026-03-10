@@ -53,7 +53,7 @@ std::pair<std::vector<int>, pram::Stat> bitonic_sort_impl(const std::vector<int>
         }
     });
 
-    return {array.data, machine.stat()};
+    return {array._data, machine.stat()};
 }
 
 void bitonic_sort_example() {
