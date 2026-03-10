@@ -20,7 +20,7 @@ target("pramsim")
 
 for _, file in ipairs(os.files("examples/*.cpp")) do
     local name = path.basename(file)
-    target("pramsim_" .. name)
+    target("example_" .. name)
         set_kind("binary")
         add_files(file)
         add_deps("pramsim")

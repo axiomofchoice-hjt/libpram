@@ -15,6 +15,8 @@ xmake
 
 等待构建完成，执行命令 `xmake run` 就能运行 examples 的程序。
 
+要安装 pramsim 库，执行命令 `xmake install pramsim` 或者指定安装路径 `xmake install --installdir=/path/to/install pramsim`。
+
 ## 2. 命令行构建
 
 ```bash
