@@ -1,5 +1,5 @@
 set_project("pramsim")
-set_version("0.1.0")
+set_version("0.2.0")
 set_languages("c++23")
 
 add_rules("mode.debug", "mode.release")
