@@ -13,7 +13,7 @@ std::pair<std::vector<size_t>, pram::Stat> list_ranking_impl(const std::vector<i
     pram::Machine machine{n, pram::CREW};
 
     auto& next = machine.allocate<int>(data);
-    auto& dist = machine.allocate<size_t>(n);
+    auto& dist = machine.allocate<size_t>(n, 0);
 
     machine.parallel([&](size_t pid) -> pram::Task {
         size_t n = next.size();

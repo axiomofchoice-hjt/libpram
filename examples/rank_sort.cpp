@@ -13,7 +13,7 @@ std::pair<std::vector<int>, pram::Stat> rank_sort_impl(const std::vector<int>& d
     pram::Machine machine{n * n, pram::CRCW_Add};
 
     auto& array = machine.allocate<int>(data);
-    auto& rank = machine.allocate<size_t>(n);
+    auto& rank = machine.allocate<size_t>(n, 0);
 
     machine.parallel([&](size_t pid) -> pram::Task {
         size_t i = pid / n;

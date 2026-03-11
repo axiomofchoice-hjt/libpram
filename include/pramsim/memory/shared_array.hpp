@@ -25,8 +25,8 @@ struct SharedArray : Memory {
     size_t _n_reads = 0;
     size_t _n_writes = 0;
 
-    SharedArray(size_t length, Model model, const Context* context)
-        : _data(std::vector<T>(length)), _model(model), _context(context) {}
+    SharedArray(size_t length, T value, Model model, const Context* context)
+        : _data(length, value), _model(model), _context(context) {}
 
     SharedArray(std::vector<T> data, Model model, const Context* context)
         : _data(std::move(data)), _model(model), _context(context) {}

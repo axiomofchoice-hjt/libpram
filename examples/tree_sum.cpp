@@ -13,7 +13,7 @@ std::pair<int, pram::Stat> tree_sum_impl(const std::vector<int>& data) {
     pram::Machine machine{n, pram::CREW};
 
     auto& array = machine.allocate<int>(data);
-    auto& result = machine.allocate<int>(1);
+    auto& result = machine.allocate<int>(1, 0);
 
     machine.parallel([&](size_t pid) -> pram::Task {
         for (size_t stride = 1; stride < n; stride *= 2) {

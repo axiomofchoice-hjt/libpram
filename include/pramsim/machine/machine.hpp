@@ -69,8 +69,8 @@ struct Machine {
     Machine(size_t n_processors, Model model) : _model(model), _context{std::make_unique<Context>(n_processors)} {}
 
     template <typename T>
-    SharedArray<T>& allocate(this auto&& self, size_t length) {
-        auto array = std::make_unique<SharedArray<T>>(length, self._model, self._context.get());
+    SharedArray<T>& allocate(this auto&& self, size_t length, T value) {
+        auto array = std::make_unique<SharedArray<T>>(length, value, self._model, self._context.get());
         self._memories.push_back(std::move(array));
         return *static_cast<SharedArray<T>*>(self._memories.back().get());
     }
