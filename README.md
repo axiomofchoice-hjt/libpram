@@ -64,7 +64,7 @@ g++ examples/rank_sort.cpp -DPRAMSIM_STANDALONE -Iinclude -std=c++23 -o rank_sor
 
 ## 3. 示例
 
-使用 CRCW_Add PRAM 进行排序，$O(n^2)$ 个处理器，$O(1)$ 时间复杂度。
+使用 CRCW_Add PRAM 进行排序，$`O(n^2)`$ 个处理器，$`O(1)`$ 时间复杂度。
 
 完整示例见 [examples/rank_sort.cpp](examples/rank_sort.cpp)。
 
