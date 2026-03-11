@@ -22,38 +22,24 @@ PRAM 是一种用于并行算法研究的常见理论模型。在该模型中，
 
 分析并行算法会有两个指标：时间复杂度和处理器数量。例如 $`O(log n)`$ 时间、$`O(n)`$ 处理器。
 
-## 2. 示例
+## 2. 最小示例
 
-使用 CRCW_Add PRAM 进行排序，$`O(1)`$ 时间，$`O(n^2)`$ 处理器。
-
-方法为两两比较数组里的元素（正好用到 $`O(n^2)`$ 个处理器），利用 CRCW_Add 并发写的自动求和机制，算出每个元素的排名。然后根据排名把元素写到数组对应位置。
-
-完整示例见 [examples/rank_sort.cpp](examples/rank_sort.cpp)。
+数组的循环右移。程序会启动 n 个处理器，每个处理器读取一个数组元素，然后在下一轮把它写到后一个位置。
 
 ```cpp
-std::pair<std::vector<int>, pram::Stat> rank_sort_impl(const std::vector<int>& data) {
-    size_t n = data.size();
-    pram::Machine machine{n * n, pram::CRCW_Add};
+#include <pramsim/pramsim.hpp>
+#include <vector>
 
-    auto& array = machine.allocate<int>(data);
-    auto& rank = machine.allocate<size_t>(n, 0);
+int main() {
+    constexpr size_t n = 8;
+    pram::Machine machine{n, pram::EREW};
+    auto& array = machine.allocate<int>(std::vector<int>{0, 1, 2, 3, 4, 5, 6, 7});
 
     machine.parallel([&](size_t pid) -> pram::Task {
-        size_t i = pid / n;
-        size_t j = pid % n;
-
-        int value_i = array[i];
-        int value_j = array[j];
-        if (std::pair{value_i, i} > std::pair{value_j, j}) {
-            rank.write(i, 1);  // 在 CRCW_Add 模型下表示并发写入求和
-        }
+        int value = array[pid];
         co_await pram::step();
-        if (j == 0) {
-            array.write(rank[i], value_i);
-        }
+        array.write((pid + 1) % n, value);
     });
-
-    return {array.data, machine.stat()};
 }
 ```
 
