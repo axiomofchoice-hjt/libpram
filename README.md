@@ -22,9 +22,11 @@ PRAM 是一种用于并行算法研究的常见理论模型。在该模型中，
 
 分析并行算法会有两个指标：时间复杂度和处理器数量。例如 $`O(log n)`$ 时间、$`O(n)`$ 处理器。
 
-## 2. 最小示例
+## 2. 示例
 
-数组的循环右移。程序会启动 n 个处理器，每个处理器读取一个数组元素，然后在下一轮把它写到后一个位置。
+数组的循环右移：程序会启动 n 个处理器，每个处理器读取一个数组元素，然后在下一轮把它写到右边的位置。
+
+`co_await pram::step();` 表示 round barrier。这一轮的写操作会统一提交，并进行读写冲突检测。
 
 ```cpp
 #include <pramsim/pramsim.hpp>
@@ -42,6 +44,14 @@ int main() {
     });
 }
 ```
+
+更多示例：
+
+1. `examples/tree_sum.cpp` - 数组求和
+2. `examples/prefix_sum.cpp` - 前缀和
+3. `examples/rank_sort.cpp` - Rank Sort
+4. `examples/bitonic_sort.cpp` - 双调排序（变种）
+5. `examples/list_ranking.cpp` - 链表排名
 
 ## 3. 快速开始
 
