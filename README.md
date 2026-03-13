@@ -26,7 +26,7 @@ PRAM 是一种用于并行算法研究的常见理论模型。在该模型中，
 
 数组的循环右移：程序会启动 n 个处理器，每个处理器读取一个数组元素，然后在下一轮把它写到右边的位置。
 
-`co_await pram::step();` 表示 round barrier。这一轮的写操作会统一提交，并进行读写冲突检测。
+`co_await pram::step();` 表示 round barrier。这一轮会统一进行读写冲突检测、提交写操作。
 
 ```cpp
 #include <pramsim/pramsim.hpp>
@@ -111,17 +111,3 @@ g++ examples/rank_sort.cpp -Iinclude -std=c++23 -o rank_sort
 ```bash
 ./rank_sort
 ```
-
-## 4. API
-
-### 4.1. 包含头文件
-
-```cpp
-#include <pramsim/pramsim.hpp>
-```
-
-### 4.2. Machine
-
-Machine 表示一台 PRAM 机器。
-
-### 4.3. SharedArray
