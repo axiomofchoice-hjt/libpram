@@ -111,3 +111,9 @@ g++ examples/rank_sort.cpp -Iinclude -std=c++23 -o rank_sort
 ```bash
 ./rank_sort
 ```
+
+## 4. 文档
+
+[用户指南 user_guide](docs/user_guide.md)
+
+[API 参考 api_reference](docs/api_reference.md)
