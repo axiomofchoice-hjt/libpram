@@ -86,7 +86,7 @@ pramsim 内部可能抛出 `pram::assertion_error` 异常，在外层要用 try 
 
 ```cpp
 int main() try {
-    example();
+    /* ... */
 } catch (const pram::assertion_error& e) {
     std::println("Assertion error: {}", e.what());
     return 1;
