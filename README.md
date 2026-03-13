@@ -103,7 +103,7 @@ git clone https://github.com/axiomofchoice-hjt/pramsim.git
 进入项目目录，执行编译命令：
 
 ```bash
-g++ examples/rank_sort.cpp -DPRAMSIM_STANDALONE -Iinclude -std=c++23 -o rank_sort
+g++ examples/rank_sort.cpp -Iinclude -std=c++23 -o rank_sort
 ```
 
 等待编译完成后，执行命令运行 `rank_sort`：
