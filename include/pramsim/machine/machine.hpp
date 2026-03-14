@@ -100,7 +100,7 @@ struct Machine {
             self._context->current_pid = std::nullopt;
             if (active) {
                 for (auto& mem : self._memories) {
-                    mem->commit();
+                    mem->commit_round();
                 }
                 self._n_rounds++;
             }
