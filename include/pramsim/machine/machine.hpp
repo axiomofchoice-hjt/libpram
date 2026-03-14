@@ -117,5 +117,5 @@ struct Machine {
     }
 };
 
-StepAwaitable step() { return {}; }
+constexpr StepAwaitable step() { return {}; }
 }  // namespace pram
