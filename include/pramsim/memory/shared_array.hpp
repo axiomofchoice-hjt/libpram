@@ -47,14 +47,12 @@ struct SharedArray : Memory {
     }
 
     void commit_round() override {
-        std::ranges::sort(_read_requests, {},
-            [](const impl::ReadRequest<T>& request) { return std::pair{request.internal_ref, request.pid}; });
-        auto unique = std::ranges::unique(_read_requests, {},
-            [](const impl::ReadRequest<T>& request) { return std::pair{request.internal_ref, request.pid}; });
-        _read_requests.erase(unique.begin(), unique.end());
+        auto key = [](const auto& req) { return std::pair{req.internal_ref, req.pid}; };
 
-        std::ranges::sort(_write_requests, {},
-            [](const impl::WriteRequest<T>& request) { return std::pair{request.internal_ref, request.pid}; });
+        std::ranges::sort(_read_requests, {}, key);
+        _read_requests.erase(std::ranges::unique(_read_requests, {}, key).begin(), _read_requests.end());
+
+        std::ranges::sort(_write_requests, {}, key);
 
         {
             for (size_t i = 0, j = 0; i < _read_requests.size() && j < _write_requests.size();) {
