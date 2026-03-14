@@ -23,6 +23,20 @@ struct WriteRequest {
 };
 
 template <typename T>
+void check_read_write_conflict(
+    const std::vector<ReadRequest<T>>& read_requests, const std::vector<WriteRequest<T>>& write_requests) {
+    for (size_t i = 0, j = 0; i < read_requests.size() && j < write_requests.size();) {
+        if (read_requests[i].internal_ref < write_requests[j].internal_ref) {
+            i++;
+        } else if (read_requests[i].internal_ref > write_requests[j].internal_ref) {
+            j++;
+        } else {
+            assert_or_throw(false, "Read-write conflict: read and write to the same address");
+        }
+    }
+}
+
+template <typename T>
 void check_exclusive_read(const std::vector<ReadRequest<T>>& read_requests) {
     for (size_t i = 0; i + 1 < read_requests.size(); i++) {
         if (read_requests[i].internal_ref == read_requests[i + 1].internal_ref) {

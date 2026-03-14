@@ -49,22 +49,15 @@ struct SharedArray : Memory {
     void commit_round() override {
         auto key = [](const auto& req) { return std::pair{req.internal_ref, req.pid}; };
 
+        // 排序读请求和去重，一个处理器读同一地址只算一次读
         std::ranges::sort(_read_requests, {}, key);
         _read_requests.erase(std::ranges::unique(_read_requests, {}, key).begin(), _read_requests.end());
 
+        // 排序写请求
         std::ranges::sort(_write_requests, {}, key);
 
-        {
-            for (size_t i = 0, j = 0; i < _read_requests.size() && j < _write_requests.size();) {
-                if (_read_requests[i].internal_ref < _write_requests[j].internal_ref) {
-                    i++;
-                } else if (_read_requests[i].internal_ref > _write_requests[j].internal_ref) {
-                    j++;
-                } else {
-                    assert_or_throw(false, "Read-write conflict: read and write to the same address");
-                }
-            }
-        }
+        // 检查读写冲突
+        check_read_write_conflict(_read_requests, _write_requests);
 
         switch (_model.read_policy) {
             case impl::ReadPolicy::Exclusive:  // 处理互斥读
