@@ -47,17 +47,14 @@ struct SharedArray : Memory {
     }
 
     void commit_round() override {
-        std::ranges::sort(_read_requests, [](const impl::ReadRequest<T>& a, const impl::ReadRequest<T>& b) {
-            return std::pair{a.internal_ref, a.pid} < std::pair{b.internal_ref, b.pid};
-        });
-        auto unique =
-            std::ranges::unique(_read_requests, [](const impl::ReadRequest<T>& a, const impl::ReadRequest<T>& b) {
-                return std::pair{a.internal_ref, a.pid} == std::pair{b.internal_ref, b.pid};
-            });
+        std::ranges::sort(_read_requests, {},
+            [](const impl::ReadRequest<T>& request) { return std::pair{request.internal_ref, request.pid}; });
+        auto unique = std::ranges::unique(_read_requests, {},
+            [](const impl::ReadRequest<T>& request) { return std::pair{request.internal_ref, request.pid}; });
         _read_requests.erase(unique.begin(), unique.end());
-        std::ranges::sort(_write_requests, [](const impl::WriteRequest<T>& a, const impl::WriteRequest<T>& b) {
-            return std::pair{a.internal_ref, a.pid} < std::pair{b.internal_ref, b.pid};
-        });
+
+        std::ranges::sort(_write_requests, {},
+            [](const impl::WriteRequest<T>& request) { return std::pair{request.internal_ref, request.pid}; });
 
         {
             for (size_t i = 0, j = 0; i < _read_requests.size() && j < _write_requests.size();) {
