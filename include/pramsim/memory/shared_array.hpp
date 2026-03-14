@@ -17,7 +17,7 @@ template <typename T>
 struct SharedArray : Memory {
     std::vector<T> _data;
     Model _model;
-    const Context* _context;
+    Context* _context;
 
     std::vector<impl::ReadRequest<T>> _read_requests;
     std::vector<impl::WriteRequest<T>> _write_requests;
@@ -25,10 +25,10 @@ struct SharedArray : Memory {
     size_t _n_reads = 0;
     size_t _n_writes = 0;
 
-    SharedArray(size_t length, T value, Model model, const Context* context)
+    SharedArray(size_t length, T value, Model model, Context* context)
         : _data(length, value), _model(model), _context(context) {}
 
-    SharedArray(std::vector<T> data, Model model, const Context* context)
+    SharedArray(std::vector<T> data, Model model, Context* context)
         : _data(std::move(data)), _model(model), _context(context) {}
 
     size_t size() const { return _data.size(); }
@@ -89,7 +89,7 @@ struct SharedArray : Memory {
                 impl::apply_write(_write_requests);
                 break;
             case impl::WritePolicy::Arbitrary:  // 处理任意写
-                impl::apply_arbitrary_write(_write_requests);
+                impl::apply_arbitrary_write(_write_requests, _context);
                 break;
             case impl::WritePolicy::Priority:  // 处理优先级写
                 impl::apply_priority_write(_write_requests);

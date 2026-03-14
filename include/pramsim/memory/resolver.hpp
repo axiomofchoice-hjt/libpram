@@ -1,11 +1,11 @@
 #pragma once
 
 #include <cstddef>
-#include <random>
 #include <ranges>
 #include <vector>
 
 #include "pramsim/base/assert.hpp"
+#include "pramsim/machine/context.hpp"
 
 namespace pram {
 namespace impl {
@@ -57,17 +57,15 @@ void apply_write(const std::vector<WriteRequest<T>>& write_requests) {
     }
 }
 
-inline std::mt19937 gen{std::random_device{}()};
-
 template <typename T>
-void apply_arbitrary_write(const std::vector<WriteRequest<T>>& write_requests) {
+void apply_arbitrary_write(const std::vector<WriteRequest<T>>& write_requests, Context* context) {
     for (size_t i = 0; i < write_requests.size();) {
         size_t j = i + 1;
         while (j < write_requests.size() && write_requests[i].internal_ref == write_requests[j].internal_ref) {
             j++;
         }
         std::uniform_int_distribution<size_t> uniform(i, j - 1);
-        *write_requests[i].internal_ref = write_requests[uniform(gen)].value;
+        *write_requests[i].internal_ref = write_requests[uniform(context->rng)].value;
         i = j;
     }
 }
