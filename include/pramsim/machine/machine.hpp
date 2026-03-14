@@ -13,40 +13,40 @@ namespace pram {
 struct Task {
     struct promise_type {
         Task get_return_object() { return Task{std::coroutine_handle<promise_type>::from_promise(*this)}; }
-        std::suspend_always initial_suspend([[maybe_unused]] this auto&& self) { return {}; }
-        std::suspend_always final_suspend([[maybe_unused]] this auto&& self) noexcept { return {}; }
+        std::suspend_always initial_suspend() { return {}; }
+        std::suspend_always final_suspend() noexcept { return {}; }
         void return_void() {}
-        void unhandled_exception([[maybe_unused]] this auto&& self) { std::terminate(); }
+        void unhandled_exception() { std::terminate(); }
     };
 
     std::coroutine_handle<promise_type> handle;
 
-    void destroy(this auto&& self) {
-        if (self.handle) {
-            self.handle.destroy();
-            self.handle = nullptr;
+    void destroy() {
+        if (handle) {
+            handle.destroy();
+            handle = nullptr;
         }
     }
 
     explicit Task(std::coroutine_handle<promise_type> h) : handle(h) {}
 
     Task(const Task&) = delete;
-    Task& operator=(this auto&& self, const Task&) = delete;
+    Task& operator=(const Task&) = delete;
     Task(Task&& other) noexcept : handle(other.handle) { other.handle = nullptr; }
-    Task& operator=(this auto&& self, Task&& other) noexcept {
-        if (&self != &other) {
-            self.destroy();
-            self.handle = other.handle;
+    Task& operator=(Task&& other) noexcept {
+        if (this != &other) {
+            destroy();
+            handle = other.handle;
             other.handle = nullptr;
         }
-        return self;
+        return *this;
     }
 
     ~Task() { destroy(); }
 };
 
 struct StepAwaitable {
-    bool await_ready([[maybe_unused]] this auto&& self) noexcept { return false; }
+    bool await_ready() noexcept { return false; }
     void await_suspend([[maybe_unused]] std::coroutine_handle<> _) noexcept {}
     void await_resume() noexcept {}
 };

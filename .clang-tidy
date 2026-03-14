@@ -6,6 +6,7 @@ Checks: >
   performance-*,
   readability-*,
   -readability-identifier-length,
+  -readability-convert-member-functions-to-static,
   modernize-use-nullptr,
   modernize-use-override,
   modernize-use-using

@@ -34,7 +34,7 @@ SharedArray<T>& Machine::allocate(std::vector<T> data);     // (2)
 
 ```cpp
 template <std::invocable<size_t> F>
-void Machine::parallel(this auto&& self, F&& func);
+void Machine::parallel(F&& func);
 ```
 
 模拟 PRAM 并行程序。func 是一个协程，参数为处理器 id，返回值为 `pram::Task`。
