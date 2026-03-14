@@ -2,7 +2,7 @@
 
 #include <format>
 
-#include "pramsim/pramsim.hpp"
+#include <pramsim/pramsim.hpp>
 
 template <std::ranges::range R>
 std::string str(const R& range) {
