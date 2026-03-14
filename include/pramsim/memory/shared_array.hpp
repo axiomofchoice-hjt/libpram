@@ -49,8 +49,13 @@ struct SharedArray : Memory {
     void commit() override {
         // std::println("commit");
         std::ranges::sort(_read_requests, [](const impl::ReadRequest<T>& a, const impl::ReadRequest<T>& b) {
-            return a.internal_ref < b.internal_ref;
+            return std::pair{a.internal_ref, a.pid} < std::pair{b.internal_ref, b.pid};
         });
+        auto unique =
+            std::ranges::unique(_read_requests, [](const impl::ReadRequest<T>& a, const impl::ReadRequest<T>& b) {
+                return std::pair{a.internal_ref, a.pid} < std::pair{b.internal_ref, b.pid};
+            });
+        _read_requests.erase(unique.begin(), unique.end());
         std::ranges::sort(_write_requests, [](const impl::WriteRequest<T>& a, const impl::WriteRequest<T>& b) {
             return std::pair{a.internal_ref, a.pid} < std::pair{b.internal_ref, b.pid};
         });
