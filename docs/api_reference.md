@@ -93,11 +93,11 @@ size_t SharedArray<T>::size() const;
 
 返回共享数组的大小。
 
-### 2.4. SharedArray::data()
+### 2.4. SharedArray::debug_data()
 
 ```cpp
 template <typename T>
-const std::vector<T>& SharedArray<T>::data() const;
+const std::vector<T>& SharedArray<T>::debug_data() const;
 ```
 
 仅用于验证、调试使用，读这个 vector 会绕过 PRAM 检查。

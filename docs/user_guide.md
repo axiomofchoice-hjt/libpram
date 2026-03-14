@@ -47,7 +47,7 @@ pramsim 支持的模型如下：
 - `array[index]` 读 index 位置的内存，立即生效。
 - `array.write(index, value)` 将 value 写入 index 位置的内存，但是不立即生效，到同步点才会生效。
 
-注意 SharedArray 提供 `array.data()` 可以获取 vector，仅用于验证、调试使用，读这个 vector 会绕过 PRAM 检查。
+注意 SharedArray 提供 `array.debug_data()` 可以获取 vector，仅用于验证、调试使用，读这个 vector 会绕过 PRAM 检查。
 
 ## 4. 同步点
 
@@ -71,7 +71,7 @@ machine.parallel([&](size_t pid) -> pram::Task {
     array.write(pid, pid);
     co_await pram::step();
     if (pid == 0) {
-        std::println("debug: {}", str(array.data()));
+        std::println("debug: {}", str(array.debug_data()));
     }
 });
 ```

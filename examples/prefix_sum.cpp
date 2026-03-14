@@ -25,7 +25,7 @@ std::pair<std::vector<int>, pram::Stat> prefix_sum_impl(const std::vector<int>& 
             co_await pram::step();
         }
     });
-    return {array.data(), machine.stat()};
+    return {array.debug_data(), machine.stat()};
 }
 
 void prefix_sum_example() {

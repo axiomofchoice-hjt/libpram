@@ -42,7 +42,7 @@ std::pair<std::vector<size_t>, pram::Stat> list_ranking_impl(const std::vector<i
         }
     });
 
-    return {dist.data(), machine.stat()};
+    return {dist.debug_data(), machine.stat()};
 }
 
 void list_ranking_example() {
