@@ -1,6 +1,6 @@
 #!/bin/sh
 
-find include examples xmake.lua README.md -type f \
+find include examples docs xmake.lua README.md -type f \
   -exec echo "===== FILE: {} =====" \; \
   -exec cat {} \; \
   > build/temp
