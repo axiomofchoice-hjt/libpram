@@ -33,6 +33,8 @@ struct SharedArray : Memory {
 
     size_t size() const { return _data.size(); }
 
+    const std::vector<T>& data() const { return _data; }
+
     T operator[](size_t index) {
         assert_or_throw(_context->current_pid.has_value(), "Read outside parallel region");
         _read_requests.push_back({.internal_ref = &_data[index], .pid = *_context->current_pid});

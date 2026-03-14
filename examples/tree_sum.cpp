@@ -33,7 +33,7 @@ std::pair<int, pram::Stat> tree_sum_impl(const std::vector<int>& data) {
         }
     });
 
-    return {result._data[0], machine.stat()};
+    return {result.data()[0], machine.stat()};
 }
 
 void tree_sum_example() {

@@ -21,5 +21,5 @@ std::string str(const R& range) {
 
 template <typename T>
 std::string str(const pram::SharedArray<T>& vec) {
-    return str(vec._data);
+    return str(vec.data());
 }
