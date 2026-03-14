@@ -1,7 +1,6 @@
 #pragma once
 
 #include <format>
-
 #include <pramsim/pramsim.hpp>
 
 template <std::ranges::range R>
