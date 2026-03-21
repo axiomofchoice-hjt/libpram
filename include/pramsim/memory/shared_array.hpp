@@ -14,93 +14,95 @@
 
 namespace pram {
 template <typename T>
-struct SharedArray : Memory {
-    std::vector<T> _data;
-    Model _model;
-    Context* _context;
-
-    std::vector<impl::ReadRequest<T>> _read_requests;
-    std::vector<impl::WriteRequest<T>> _write_requests;
-
-    size_t _n_reads = 0;
-    size_t _n_writes = 0;
-
+class SharedArray : public Memory {
+   public:
     SharedArray(size_t length, T value, Model model, Context* context)
-        : _data(length, value), _model(model), _context(context) {}
+        : data_(length, value), model_(model), context_(context) {}
 
     SharedArray(std::vector<T> data, Model model, Context* context)
-        : _data(std::move(data)), _model(model), _context(context) {}
+        : data_(std::move(data)), model_(model), context_(context) {}
 
-    size_t size() const { return _data.size(); }
+    size_t size() const { return data_.size(); }
 
-    const std::vector<T>& debug_data() const { return _data; }
+    const std::vector<T>& debug_data() const { return data_; }
 
     T operator[](size_t index) {
-        assert_or_throw(_context->current_pid.has_value(), "Read outside parallel region");
-        _read_requests.push_back({.internal_ref = &_data[index], .pid = *_context->current_pid});
-        return _data[index];
+        assert_or_throw(context_->current_pid.has_value(), "Read outside parallel region");
+        read_requests_.push_back({.internal_ref = &data_[index], .pid = *context_->current_pid});
+        return data_[index];
     }
 
     void write(size_t index, T value) {
-        assert_or_throw(_context->current_pid.has_value(), "Write outside parallel region");
-        _write_requests.push_back({.internal_ref = &_data[index], .value = value, .pid = *_context->current_pid});
+        assert_or_throw(context_->current_pid.has_value(), "Write outside parallel region");
+        write_requests_.push_back({.internal_ref = &data_[index], .value = value, .pid = *context_->current_pid});
     }
 
     void commit_round() override {
         auto key = [](const auto& req) { return std::pair{req.internal_ref, req.pid}; };
 
         // 排序读请求和去重，一个处理器读同一地址只算一次读
-        std::ranges::sort(_read_requests, {}, key);
-        _read_requests.erase(std::ranges::unique(_read_requests, {}, key).begin(), _read_requests.end());
+        std::ranges::sort(read_requests_, {}, key);
+        read_requests_.erase(std::ranges::unique(read_requests_, {}, key).begin(), read_requests_.end());
 
         // 排序写请求
-        std::ranges::sort(_write_requests, {}, key);
+        std::ranges::sort(write_requests_, {}, key);
 
         // 检查读写冲突
-        check_read_write_conflict(_read_requests, _write_requests);
+        check_read_write_conflict(read_requests_, write_requests_);
 
-        switch (_model.read_policy) {
+        switch (model_.read_policy) {
             case impl::ReadPolicy::Exclusive:  // 处理互斥读
-                impl::check_exclusive_read(_read_requests);
+                impl::check_exclusive_read(read_requests_);
                 break;
             case impl::ReadPolicy::Concurrent:  // 处理并发读
                 break;
         }
 
-        switch (_model.write_policy) {
+        switch (model_.write_policy) {
             case impl::WritePolicy::Exclusive:  // 处理互斥写
-                impl::check_exclusive_write(_write_requests);
-                impl::apply_write(_write_requests);
+                impl::check_exclusive_write(write_requests_);
+                impl::apply_write(write_requests_);
                 break;
             case impl::WritePolicy::Common:  // 处理公共写
-                impl::check_common_write(_write_requests);
-                impl::apply_write(_write_requests);
+                impl::check_common_write(write_requests_);
+                impl::apply_write(write_requests_);
                 break;
             case impl::WritePolicy::Arbitrary:  // 处理任意写
-                impl::apply_arbitrary_write(_write_requests, _context);
+                impl::apply_arbitrary_write(write_requests_, context_);
                 break;
             case impl::WritePolicy::Priority:  // 处理优先级写
-                impl::apply_priority_write(_write_requests);
+                impl::apply_priority_write(write_requests_);
                 break;
             case impl::WritePolicy::Add:  // 处理合并写 加法
-                impl::apply_combining_write(_write_requests, std::plus<T>{});
+                impl::apply_combining_write(write_requests_, std::plus<T>{});
                 break;
             case impl::WritePolicy::Max:  // 处理合并写 取最大值
-                impl::apply_combining_write(_write_requests, [](const T& a, const T& b) { return std::max(a, b); });
+                impl::apply_combining_write(write_requests_, [](const T& a, const T& b) { return std::max(a, b); });
                 break;
             case impl::WritePolicy::Min:  // 处理合并写 取最小值
-                impl::apply_combining_write(_write_requests, [](const T& a, const T& b) { return std::min(a, b); });
+                impl::apply_combining_write(write_requests_, [](const T& a, const T& b) { return std::min(a, b); });
                 break;
         }
 
-        _n_reads += _read_requests.size();
-        _n_writes += _write_requests.size();
+        n_reads_ += read_requests_.size();
+        n_writes_ += write_requests_.size();
 
-        _read_requests.clear();
-        _write_requests.clear();
+        read_requests_.clear();
+        write_requests_.clear();
     }
 
-    size_t n_reads() const override { return _n_reads; }
-    size_t n_writes() const override { return _n_writes; }
+    size_t n_reads() const override { return n_reads_; }
+    size_t n_writes() const override { return n_writes_; }
+
+   private:
+    std::vector<T> data_;
+    Model model_;
+    Context* context_;
+
+    std::vector<impl::ReadRequest<T>> read_requests_;
+    std::vector<impl::WriteRequest<T>> write_requests_;
+
+    size_t n_reads_ = 0;
+    size_t n_writes_ = 0;
 };
 }  // namespace pram

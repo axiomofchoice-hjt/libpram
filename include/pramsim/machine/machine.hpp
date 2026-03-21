@@ -58,34 +58,31 @@ struct Stat {
     size_t n_writes;
 };
 
-struct Machine {
-    Model _model;
-    std::vector<std::unique_ptr<Memory>> _memories;
-    std::unique_ptr<Context> _context;
-
-    size_t _n_rounds = 0;
-
-    Machine(size_t n_processors) : _model{CREW}, _context{std::make_unique<Context>(n_processors)} {}
-    Machine(size_t n_processors, Model model) : _model(model), _context{std::make_unique<Context>(n_processors)} {}
+class Machine {
+   public:
+    Machine(size_t n_processors) : model_{CREW}, context_{std::make_unique<Context>(n_processors)} {}
+    Machine(size_t n_processors, Model model) : model_(model), context_{std::make_unique<Context>(n_processors)} {}
 
     template <typename T>
-    SharedArray<T>& allocate(this auto&& self, size_t length, T value) {
-        auto array = std::make_unique<SharedArray<T>>(length, value, self._model, self._context.get());
-        self._memories.push_back(std::move(array));
-        return *static_cast<SharedArray<T>*>(self._memories.back().get());
+    SharedArray<T>& allocate(size_t length, T value) {
+        auto array = std::make_unique<SharedArray<T>>(length, value, model_, context_.get());
+        SharedArray<T>* res = array.get();
+        memories_.push_back(std::move(array));
+        return *res;
     }
 
     template <typename T>
-    SharedArray<T>& allocate(this auto&& self, std::vector<T> data) {
-        auto array = std::make_unique<SharedArray<T>>(std::move(data), self._model, self._context.get());
-        self._memories.push_back(std::move(array));
-        return *static_cast<SharedArray<T>*>(self._memories.back().get());
+    SharedArray<T>& allocate(std::vector<T> data) {
+        auto array = std::make_unique<SharedArray<T>>(std::move(data), model_, context_.get());
+        SharedArray<T>* res = array.get();
+        memories_.push_back(std::move(array));
+        return *res;
     }
 
     template <std::invocable<size_t> F>
-    void parallel(this auto&& self, F&& func) {
+    void parallel(F&& func) {
         bool active = true;
-        auto tasks = std::views::iota(0zU, self._context->n_processors) | std::views::transform(func) |
+        auto tasks = std::views::iota(0zU, context_->n_processors) | std::views::transform(func) |
                      std::ranges::to<std::vector>();
 
         while (active) {
@@ -93,28 +90,34 @@ struct Machine {
             for (auto&& [pid, t] : tasks | std::views::enumerate) {
                 if (!t.handle.done()) {
                     active = true;
-                    self._context->current_pid = pid;
+                    context_->current_pid = pid;
                     t.handle.resume();
                 }
             }
-            self._context->current_pid = std::nullopt;
+            context_->current_pid = std::nullopt;
             if (active) {
-                for (auto& mem : self._memories) {
+                for (auto& mem : memories_) {
                     mem->commit_round();
                 }
-                self._n_rounds++;
+                n_rounds_++;
             }
         }
     }
 
     Stat stat() const {
         size_t n_reads = std::ranges::fold_left(
-            _memories, 0ULL, [](size_t acc, const std::unique_ptr<Memory>& mem) { return acc + mem->n_reads(); });
+            memories_, 0ULL, [](size_t acc, const std::unique_ptr<Memory>& mem) { return acc + mem->n_reads(); });
         size_t n_writes = std::ranges::fold_left(
-            _memories, 0ULL, [](size_t acc, const std::unique_ptr<Memory>& mem) { return acc + mem->n_writes(); });
+            memories_, 0ULL, [](size_t acc, const std::unique_ptr<Memory>& mem) { return acc + mem->n_writes(); });
         return {
-            .n_processors = _context->n_processors, .n_rounds = _n_rounds, .n_reads = n_reads, .n_writes = n_writes};
+            .n_processors = context_->n_processors, .n_rounds = n_rounds_, .n_reads = n_reads, .n_writes = n_writes};
     }
+
+   private:
+    Model model_;
+    std::vector<std::unique_ptr<Memory>> memories_;
+    std::unique_ptr<Context> context_;
+    size_t n_rounds_ = 0;
 };
 
 constexpr StepAwaitable step() { return {}; }

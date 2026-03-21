@@ -3,7 +3,8 @@
 #include <cstddef>
 
 namespace pram {
-struct Memory {
+class Memory {
+   public:
     virtual void commit_round() = 0;
     virtual size_t n_reads() const = 0;
     virtual size_t n_writes() const = 0;
