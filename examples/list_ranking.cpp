@@ -52,8 +52,8 @@ void list_ranking_example() {
     std::vector<int> data(n, -1);
     auto perm = std::views::iota(0, static_cast<int>(n)) | std::ranges::to<std::vector>();
     std::ranges::shuffle(perm, gen);
-    std::vector<size_t> expected(n, 0zU);
-    std::ranges::for_each(std::views::iota(0zU, n - 1), [&](size_t i) {
+    std::vector<size_t> expected(n, size_t{0});
+    std::ranges::for_each(std::views::iota(size_t{0}, n - 1), [&](size_t i) {
         data[perm[i]] = perm[i + 1];
         expected[perm[i]] = n - 1 - i;
     });

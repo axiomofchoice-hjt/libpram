@@ -98,7 +98,7 @@ void apply_priority_write(const std::vector<WriteRequest<T>>& write_requests) {
 
 template <typename T>
 void apply_combining_write(const std::vector<WriteRequest<T>>& write_requests, const auto& combine_function) {
-    for (size_t i : std::views::iota(0zU, write_requests.size())) {
+    for (size_t i : std::views::iota(size_t{0}, write_requests.size())) {
         if (i == 0 || write_requests[i].internal_ref != write_requests[i - 1].internal_ref) {
             *write_requests[i].internal_ref = write_requests[i].value;
         } else {

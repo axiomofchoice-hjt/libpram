@@ -42,7 +42,7 @@ void tree_sum_example() {
     std::mt19937 gen{std::random_device{}()};
     std::uniform_int_distribution<> dis(1, 4);
     std::vector<int> data;
-    std::ranges::for_each(std::views::iota(0zU, n), [&](int) { data.push_back(dis(gen)); });
+    std::ranges::for_each(std::views::iota(size_t{0}, n), [&](int) { data.push_back(dis(gen)); });
     std::ranges::shuffle(data, gen);
     int expected = std::ranges::fold_left(data, 0, std::plus{});
 

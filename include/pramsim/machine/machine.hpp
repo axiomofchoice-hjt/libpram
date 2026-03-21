@@ -82,7 +82,7 @@ class Machine {
     template <std::invocable<size_t> F>
     void parallel(F&& func) {
         bool active = true;
-        auto tasks = std::views::iota(0zU, context_->n_processors) | std::views::transform(func) |
+        auto tasks = std::views::iota(size_t{0}, context_->n_processors) | std::views::transform(func) |
                      std::ranges::to<std::vector>();
 
         while (active) {
